@@ -3,17 +3,18 @@
     <!-- Header Navigation -->
     <header class="header">
       <div class="container">
-        <div class="logo">
+        <!-- คลิก Logo ไปหน้า Home -->
+        <router-link to="/" class="logo">
           <div class="logo-icon">🚗</div>
           <span class="logo-text">WASHFLOW</span>
-        </div>
+        </router-link>
         
         <nav class="nav">
-          <a href="/">การบริการ</a>
-          <a href="/">จองคิวล้างรถ</a>
+          <router-link to="/">การบริการ</router-link>
+          <router-link to="/">จองคิวล้างรถ</router-link>
           <router-link to="/" class="active">HOME</router-link>
-          <a href="/">ประเภทรถ</a>
-          <a href="/">ประวัติการใช้งาน</a>
+          <router-link to="/">ประเภทรถ</router-link>
+          <router-link to="/">ประวัติการใช้งาน</router-link>
         </nav>
 
         <div class="header-actions">
@@ -91,6 +92,13 @@ const formData = reactive({
 })
 
 const handleRegister = () => {
+  // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
+  if (!formData.username || !formData.password || !formData.confirmPassword) {
+    alert('กรุณากรอกข้อมูลให้ครบถ้วน!')
+    return
+  }
+
+  // ตรวจสอบว่ารหัสผ่านตรงกันหรือไม่
   if (formData.password !== formData.confirmPassword) {
     alert('รหัสผ่านไม่ตรงกัน!')
     return
@@ -99,6 +107,7 @@ const handleRegister = () => {
   console.log('Register:', formData)
   alert('สมัครสมาชิกสำเร็จ!')
   
+  // ไปหน้า Home หลังสมัครสำเร็จ
   router.push('/')
 }
 </script>
@@ -144,6 +153,8 @@ const handleRegister = () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  text-decoration: none; /* เพิ่มบรรทัดนี้ */
+  cursor: pointer; /* เพิ่มบรรทัดนี้ */
 }
 
 .logo-icon {
