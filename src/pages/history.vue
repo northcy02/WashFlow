@@ -38,6 +38,10 @@
               <div class="history-body">
                 <div class="history-info">
                   <div class="info-row">
+                    <span class="label">รหัสการจอง:</span>
+                    <span class="value">#{{ item.id }}</span>
+                  </div>
+                  <div class="info-row">
                     <span class="label">ประเภทรถ:</span>
                     <span class="value">{{ item.carType }}</span>
                   </div>
@@ -62,6 +66,13 @@
                   >
                     จองอีกครั้ง
                   </button>
+                  <button 
+                    v-if="item.status === 'pending'"
+                    class="btn-cancel" 
+                    @click="cancelBooking(item)"
+                  >
+                    ยกเลิกการจอง
+                  </button>
                 </div>
               </div>
             </div>
@@ -73,52 +84,104 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Navigator from '../components/Navigator.vue';
+import Swal from 'sweetalert2';
 
 const router = useRouter();
+const historyList = ref<any[]>([]);
 
-// Sample History Data
-const historyList = ref([
-  {
-    id: 1,
-    date: '15 ธันวาคม 2567',
-    carType: 'รถเก๋ง',
-    services: ['ล้างรถ', 'ขัดสี'],
-    price: 1200,
-    status: 'completed',
-    statusText: 'เสร็จสิ้น'
-  },
-  {
-    id: 2,
-    date: '10 ธันวาคม 2567',
-    carType: 'รถกระบะ',
-    services: ['เคลือบแก้ว', 'ดูดฝุ่น'],
-    price: 950,
-    status: 'completed',
-    statusText: 'เสร็จสิ้น'
-  },
-  {
-    id: 3,
-    date: '5 ธันวาคม 2567',
-    carType: 'รถเก๋ง',
-    services: ['ล้างรถ'],
-    price: 200,
-    status: 'cancelled',
-    statusText: 'ยกเลิก'
+// Load booking history from localStorage
+const loadHistory = () => {
+  const savedHistory = localStorage.getItem('bookingHistory');
+  if (savedHistory) {
+    historyList.value = JSON.parse(savedHistory);
   }
-]);
+};
 
 const viewDetail = (item: any) => {
-  console.log('View detail:', item);
-  alert(`รายละเอียดการจอง\n\nวันที่: ${item.date}\nรถ: ${item.carType}\nบริการ: ${item.services.join(', ')}\nราคา: ${item.price} บาท`);
+  Swal.fire({
+    title: 'รายละเอียดการจอง',
+    html: `
+      <div style="text-align: left; padding: 1rem;">
+        <p style="margin-bottom: 0.8rem;"><strong>รหัสการจอง:</strong> #${item.id}</p>
+        <p style="margin-bottom: 0.8rem;"><strong>วันที่:</strong> ${item.date}</p>
+        <p style="margin-bottom: 0.8rem;"><strong>ประเภทรถ:</strong> ${item.carType}</p>
+        <p style="margin-bottom: 0.8rem;"><strong>บริการ:</strong> ${item.services.join(', ')}</p>
+        <p style="margin-bottom: 0.8rem;"><strong>ราคารวม:</strong> ${item.price} บาท</p>
+        <p style="margin-bottom: 0.8rem;"><strong>สถานะ:</strong> <span style="color: ${item.status === 'completed' ? '#10b981' : item.status === 'pending' ? '#f59e0b' : '#ef4444'}">${item.statusText}</span></p>
+      </div>
+    `,
+    icon: 'info',
+    iconColor: '#dc2626',
+    confirmButtonColor: '#dc2626',
+    confirmButtonText: 'ปิด',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff',
+    customClass: {
+      popup: 'custom-swal-popup',
+      title: 'custom-swal-title',
+      confirmButton: 'custom-swal-confirm-big'
+    },
+    buttonsStyling: false
+  });
 };
 
 const rebook = (item: any) => {
-  console.log('Rebook:', item);
   router.push('/booking');
 };
+
+const cancelBooking = (item: any) => {
+  Swal.fire({
+    title: 'ยกเลิกการจอง',
+    text: `คุณต้องการยกเลิกการจอง #${item.id} หรือไม่?`,
+    icon: 'warning',
+    iconColor: '#dc2626',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: '<i class="fas fa-times-circle"></i> ยกเลิกการจอง',
+    cancelButtonText: '<i class="fas fa-arrow-left"></i> ย้อนกลับ',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff',
+    customClass: {
+      popup: 'custom-swal-popup',
+      confirmButton: 'custom-swal-confirm-big',
+      cancelButton: 'custom-swal-cancel-big'
+    },
+    buttonsStyling: false
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Update status
+      item.status = 'cancelled';
+      item.statusText = 'ยกเลิกแล้ว';
+      
+      // Save to localStorage
+      localStorage.setItem('bookingHistory', JSON.stringify(historyList.value));
+      
+      Swal.fire({
+        title: 'ยกเลิกสำเร็จ!',
+        text: 'การจองของคุณถูกยกเลิกแล้ว',
+        icon: 'success',
+        iconColor: '#10b981',
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: '<i class="fas fa-check-circle"></i> ตกลง',
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff',
+        customClass: {
+          popup: 'custom-swal-popup',
+          confirmButton: 'custom-swal-confirm-big'
+        },
+        buttonsStyling: false
+      });
+    }
+  });
+};
+
+onMounted(() => {
+  loadHistory();
+});
 </script>
 
 <style scoped>
@@ -328,7 +391,7 @@ const rebook = (item: any) => {
   flex-direction: column;
 }
 
-.btn-detail, .btn-rebook {
+.btn-detail, .btn-rebook, .btn-cancel {
   padding: 0.6rem 1.5rem;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -361,6 +424,24 @@ const rebook = (item: any) => {
   box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4);
 }
 
+/* ปุ่มยกเลิก - ขนาดใหญ่ขึ้น */
+.btn-cancel {
+  background: #ef4444;
+  color: white;
+  padding: 0.6rem 1.7rem;
+  font-size: 1.0rem;
+  font-weight: 600;
+  border-radius: 7px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-cancel:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.5);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .main-title {
@@ -377,7 +458,7 @@ const rebook = (item: any) => {
     width: 100%;
   }
 
-  .btn-detail, .btn-rebook {
+  .btn-detail, .btn-rebook, .btn-cancel {
     flex: 1;
   }
 
@@ -392,5 +473,64 @@ const rebook = (item: any) => {
   .no-history p {
     font-size: 1.2rem;
   }
+}
+</style>
+
+<!-- SweetAlert2 Custom Styles -->
+<style>
+/* Big Buttons for SweetAlert */
+.custom-swal-confirm-big,
+.custom-swal-cancel-big {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  padding: 1.2rem 3rem !important;
+  border-radius: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  transition: all 0.3s !important;
+  border: 2px solid !important;
+  min-width: 200px !important;
+}
+
+.custom-swal-confirm-big {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.custom-swal-confirm-big:hover {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4) !important;
+}
+
+.custom-swal-cancel-big {
+  background: transparent !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.custom-swal-cancel-big:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: white !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Custom SweetAlert2 Styles */
+.custom-swal-popup {
+  border-radius: 20px !important;
+  border: 2px solid rgba(220, 38, 38, 0.3) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+  padding: 2rem !important;
+}
+
+.custom-swal-title {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-bottom: 1rem !important;
 }
 </style>

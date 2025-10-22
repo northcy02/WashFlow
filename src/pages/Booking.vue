@@ -21,7 +21,7 @@
             <div 
               class="vehicle-card"
               :class="{ active: selectedVehicle === 'sedan' }"
-              @click="selectedVehicle = 'sedan'"
+              @click="selectVehicle('sedan')"
             >
               <div class="vehicle-icon">
                 <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
@@ -37,7 +37,7 @@
             <div 
               class="vehicle-card"
               :class="{ active: selectedVehicle === 'truck' }"
-              @click="selectedVehicle = 'truck'"
+              @click="selectVehicle('truck')"
             >
               <div class="vehicle-icon">
                 <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
@@ -53,7 +53,7 @@
             <div 
               class="vehicle-card"
               :class="{ active: selectedVehicle === 'sport' }"
-              @click="selectedVehicle = 'sport'"
+              @click="selectVehicle('sport')"
             >
               <div class="vehicle-icon">
                 <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
@@ -69,7 +69,7 @@
             <div 
               class="vehicle-card"
               :class="{ active: selectedVehicle === 'suv' }"
-              @click="selectedVehicle = 'suv'"
+              @click="selectVehicle('suv')"
             >
               <div class="vehicle-icon">
                 <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
@@ -85,7 +85,7 @@
             <div 
               class="vehicle-card"
               :class="{ active: selectedVehicle === 'motor' }"
-              @click="selectedVehicle = 'motor'"
+              @click="selectVehicle('motor')"
             >
               <div class="vehicle-icon">
                 <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
@@ -238,6 +238,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Navigator from '../components/Navigator.vue';
+import Swal from 'sweetalert2';
 
 const router = useRouter();
 
@@ -268,12 +269,70 @@ const vehicleNames: Record<string, string> = {
   motor: 'มอเตอร์ไซค์'
 };
 
+// Select Vehicle with SweetAlert notification
+const selectVehicle = (vehicle: string) => {
+  selectedVehicle.value = vehicle;
+  
+  Swal.fire({
+    title: 'เลือกประเภทรถ',
+    text: `คุณเลือก ${getVehicleName(vehicle)}`,
+    icon: 'success',
+    iconColor: '#10b981',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 1500,
+    timerProgressBar: true,
+    background: 'rgba(30, 30, 30, 0.95)',
+    color: '#ffffff',
+    customClass: {
+      popup: 'custom-toast'
+    }
+  });
+};
+
+// Toggle Service with SweetAlert notification
 const toggleService = (service: string) => {
   const index = selectedServices.value.indexOf(service);
+  
   if (index > -1) {
     selectedServices.value.splice(index, 1);
+    
+    Swal.fire({
+      title: 'ยกเลิกบริการ',
+      text: `ลบ ${servicesNames[service]} แล้ว`,
+      icon: 'info',
+      iconColor: '#f59e0b',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+      background: 'rgba(30, 30, 30, 0.95)',
+      color: '#ffffff',
+      customClass: {
+        popup: 'custom-toast'
+      }
+    });
   } else {
     selectedServices.value.push(service);
+    
+    Swal.fire({
+      title: 'เพิ่มบริการ',
+      text: `เลือก ${servicesNames[service]} (${servicesPrices[service]} บาท)`,
+      icon: 'success',
+      iconColor: '#10b981',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+      background: 'rgba(30, 30, 30, 0.95)',
+      color: '#ffffff',
+      customClass: {
+        popup: 'custom-toast'
+      }
+    });
   }
 };
 
@@ -291,20 +350,145 @@ const calculateTotal = () => {
   }, 0);
 };
 
+// Confirm Booking with SweetAlert
 const confirmBooking = () => {
-  if (selectedVehicle.value && selectedServices.value.length > 0) {
-    const total = calculateTotal();
-    const servicesList = getServiceNames();
-    
-    alert(`✅ จองสำเร็จ!\n\n📋 รายละเอียด:\nประเภทรถ: ${getVehicleName(selectedVehicle.value)}\nบริการ: ${servicesList}\n\n💰 ราคารวม: ${total} บาท\n\nขอบคุณที่ใช้บริการ CYBERCAR`);
-    
+  if (!selectedVehicle.value || selectedServices.value.length === 0) {
+    Swal.fire({
+      title: 'ข้อมูลไม่ครบ!',
+      text: 'กรุณาเลือกประเภทรถและบริการ',
+      icon: 'error',
+      iconColor: '#dc2626',
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'ตกลง',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff',
+      customClass: {
+        popup: 'custom-swal-popup',
+        title: 'custom-swal-title',
+        confirmButton: 'custom-swal-confirm'
+      },
+      buttonsStyling: false
+    });
+    return;
+  }
+
+  const total = calculateTotal();
+  const servicesList = getServiceNames();
+  const vehicleName = getVehicleName(selectedVehicle.value);
+
+  // Show confirmation dialog
+  Swal.fire({
+    title: 'ยืนยันการจอง',
+    html: `
+      <div style="text-align: left; padding: 1rem;">
+        <p style="margin-bottom: 0.8rem;"><strong>ประเภทรถ:</strong> ${vehicleName}</p>
+        <p style="margin-bottom: 0.8rem;"><strong>บริการ:</strong> ${servicesList}</p>
+        <p style="margin-bottom: 0.8rem; font-size: 1.3rem; color: #dc2626;"><strong>ราคารวม:</strong> ${total} บาท</p>
+      </div>
+    `,
+    icon: 'question',
+    iconColor: '#dc2626',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: '<i class="fas fa-check"></i> ยืนยันการจอง',
+    cancelButtonText: '<i class="fas fa-times"></i> ยกเลิก',
+    reverseButtons: true,
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff',
+    customClass: {
+      popup: 'custom-swal-popup',
+      title: 'custom-swal-title',
+      htmlContainer: 'custom-swal-text',
+      confirmButton: 'custom-swal-confirm',
+      cancelButton: 'custom-swal-cancel'
+    },
+    buttonsStyling: false,
+    showClass: {
+      popup: 'animate__animated animate__zoomIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__zoomOut animate__faster'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      saveBooking(vehicleName, servicesList, total);
+    }
+  });
+};
+
+// Save booking to localStorage and show success
+const saveBooking = (vehicleName: string, servicesList: string, total: number) => {
+  // Get current date
+  const currentDate = new Date();
+  const dateStr = currentDate.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  // Create booking object
+  const newBooking = {
+    id: Date.now(),
+    date: dateStr,
+    carType: vehicleName,
+    services: selectedServices.value.map(s => servicesNames[s]),
+    price: total,
+    status: 'pending',
+    statusText: 'รอดำเนินการ',
+    createdAt: currentDate.toISOString()
+  };
+
+  // Get existing bookings from localStorage
+  const existingBookings = localStorage.getItem('bookingHistory');
+  let bookings = existingBookings ? JSON.parse(existingBookings) : [];
+
+  // Add new booking
+  bookings.unshift(newBooking);
+
+  // Save to localStorage
+  localStorage.setItem('bookingHistory', JSON.stringify(bookings));
+
+  // Show success message with animation
+  Swal.fire({
+    title: 'จองสำเร็จ!',
+    html: `
+      <div style="text-align: center; padding: 1rem;">
+        <p style="font-size: 1.1rem; margin-bottom: 1rem;">การจองของคุณได้รับการบันทึกแล้ว</p>
+        <div style="background: rgba(220, 38, 38, 0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
+          <p style="margin-bottom: 0.5rem;"><strong>รหัสการจอง:</strong> #${newBooking.id}</p>
+          <p style="margin-bottom: 0.5rem;"><strong>วันที่:</strong> ${dateStr}</p>
+          <p style="color: #10b981;"><strong>สถานะ:</strong> รอดำเนินการ</p>
+        </div>
+      </div>
+    `,
+    icon: 'success',
+    iconColor: '#10b981',
+    confirmButtonColor: '#dc2626',
+    confirmButtonText: '<i class="fas fa-history"></i> ดูประวัติการจอง',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff',
+    customClass: {
+      popup: 'custom-swal-popup',
+      title: 'custom-swal-title',
+      htmlContainer: 'custom-swal-text',
+      confirmButton: 'custom-swal-confirm'
+    },
+    buttonsStyling: false,
+    showClass: {
+      popup: 'animate__animated animate__bounceIn'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut'
+    }
+  }).then(() => {
     // Reset form
     selectedVehicle.value = '';
     selectedServices.value = [];
     
-    // Navigate to history
+    // Navigate to history page
     router.push('/history');
-  }
+  });
 };
 </script>
 
@@ -649,5 +833,76 @@ const confirmBooking = () => {
   .vehicle-grid, .service-grid {
     grid-template-columns: 1fr;
   }
+}
+</style>
+
+<!-- SweetAlert2 Custom Styles -->
+<style>
+/* Toast Notification */
+.custom-toast {
+  border-radius: 10px !important;
+  border: 1px solid rgba(220, 38, 38, 0.3) !important;
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+}
+
+/* Custom SweetAlert2 Styles */
+.custom-swal-popup {
+  border-radius: 20px !important;
+  border: 2px solid rgba(220, 38, 38, 0.3) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+  padding: 2rem !important;
+}
+
+.custom-swal-title {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-bottom: 1rem !important;
+}
+
+.custom-swal-text {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 1.1rem !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.custom-swal-confirm,
+.custom-swal-cancel {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  padding: 0.9rem 2rem !important;
+  border-radius: 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  transition: all 0.3s !important;
+  border: 2px solid !important;
+  min-width: 140px !important;
+}
+
+.custom-swal-confirm {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.custom-swal-confirm:hover {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4) !important;
+}
+
+.custom-swal-cancel {
+  background: transparent !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.custom-swal-cancel:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: white !important;
+  transform: translateY(-2px) !important;
 }
 </style>
