@@ -32,7 +32,7 @@
         <template v-else>
           <div class="user-info">
             <span class="welcome-text">สวัสดี, {{ username }}</span>
-            <button @click="handleLogout" class="logout-btn">LOGOUT</button>
+            <button @click="handleLogoutClick" class="logout-btn">LOGOUT</button>
           </div>
         </template>
 
@@ -74,7 +74,7 @@
             </li>
             <li v-if="isLoggedIn" class="divider"></li>
             <li v-if="isLoggedIn">
-              <a @click="handleLogout" class="logout-link">
+              <a @click="handleLogoutClick; closeUserMenu()" class="logout-link">
                 <span class="menu-icon">🚪</span>
                 <span>ออกจากระบบ</span>
               </a>
@@ -99,8 +99,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const isLoggedIn = ref(false)
@@ -135,17 +136,84 @@ const closeUserMenu = () => {
   showUserMenu.value = false
 }
 
-// Handle Logout
+// Handle Logout Click - Show SweetAlert
+const handleLogoutClick = () => {
+  Swal.fire({
+    title: 'ออกจากระบบ',
+    text: 'คุณต้องการออกจากระบบหรือไม่?',
+    icon: 'warning',
+    iconColor: '#dc2626',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: '<i class="fas fa-sign-out-alt"></i> ออกจากระบบ',
+    cancelButtonText: '<i class="fas fa-times"></i> ยกเลิก',
+    reverseButtons: true,
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff',
+    backdrop: `
+      rgba(0,0,0,0.8)
+      url("https://sweetalert2.github.io/images/nyan-cat.gif")
+      left top
+      no-repeat
+    `,
+    customClass: {
+      popup: 'custom-swal-popup',
+      title: 'custom-swal-title',
+      htmlContainer: 'custom-swal-text',
+      confirmButton: 'custom-swal-confirm',
+      cancelButton: 'custom-swal-cancel'
+    },
+    buttonsStyling: false,
+    showClass: {
+      popup: 'animate__animated animate__fadeInDown animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOutUp animate__faster'
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      handleLogout()
+    }
+  })
+}
+
+// Handle Logout - Actual Logout
 const handleLogout = () => {
-  if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
-    localStorage.removeItem('user')
-    localStorage.removeItem('isLoggedIn')
-    isLoggedIn.value = false
-    username.value = ''
-    userEmail.value = ''
-    showUserMenu.value = false
+  localStorage.removeItem('user')
+  localStorage.removeItem('isLoggedIn')
+  isLoggedIn.value = false
+  username.value = ''
+  userEmail.value = ''
+  showUserMenu.value = false
+  
+  // Success notification
+  Swal.fire({
+    title: 'ออกจากระบบสำเร็จ!',
+    text: 'ขอบคุณที่ใช้บริการ CYBERCAR',
+    icon: 'success',
+    iconColor: '#10b981',
+    confirmButtonColor: '#dc2626',
+    confirmButtonText: '<i class="fas fa-check"></i> ตรงไป',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff',
+    timer: 2000,
+    timerProgressBar: true,
+    customClass: {
+      popup: 'custom-swal-popup',
+      title: 'custom-swal-title',
+      confirmButton: 'custom-swal-confirm'
+    },
+    buttonsStyling: false,
+    showClass: {
+      popup: 'animate__animated animate__bounceIn animate__faster'
+    },
+    hideClass: {
+      popup: 'animate__animated animate__fadeOut animate__faster'
+    }
+  }).then(() => {
     router.push('/login')
-  }
+  })
 }
 
 // Click outside to close menu
@@ -480,5 +548,93 @@ onUnmounted(() => {
     right: 1rem;
     min-width: 260px;
   }
+}
+</style>
+
+<!-- SweetAlert2 Custom Styles -->
+<style>
+/* Custom SweetAlert2 Styles */
+.custom-swal-popup {
+  border-radius: 20px !important;
+  border: 2px solid rgba(220, 38, 38, 0.3) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+  padding: 2rem !important;
+}
+
+.custom-swal-title {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin-bottom: 1rem !important;
+}
+
+.custom-swal-text {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 1.1rem !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  margin-bottom: 2rem !important;
+}
+
+.custom-swal-confirm,
+.custom-swal-cancel {
+  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  padding: 0.9rem 2rem !important;
+  border-radius: 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  transition: all 0.3s !important;
+  border: 2px solid !important;
+  min-width: 140px !important;
+}
+
+.custom-swal-confirm {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.custom-swal-confirm:hover {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4) !important;
+}
+
+.custom-swal-cancel {
+  background: transparent !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.custom-swal-cancel:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: white !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Icon Styling */
+.swal2-icon.swal2-warning {
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+.swal2-icon.swal2-success {
+  border-color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #10b981 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Timer Progress Bar */
+.swal2-timer-progress-bar {
+  background: #dc2626 !important;
 }
 </style>
