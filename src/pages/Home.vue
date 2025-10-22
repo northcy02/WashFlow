@@ -1,33 +1,7 @@
 <template>
   <div class="home-page">
-    <!-- Header Navigation -->
-    <header class="header">
-      <div class="container">
-        <router-link to="/" class="logo">
-          <span class="logo-text">WASHFLOW</span>
-        </router-link>
-        
-        <nav class="nav">
-          <router-link to="/services">การบริการ</router-link>
-          <router-link to="/booking">จองคิวล้างรถ</router-link>
-          <router-link to="/" class="active">HOME</router-link>
-          <router-link to="/car-types">ประเภทรถ</router-link>
-          <router-link to="/history">ประวัติการใช้งาน</router-link>
-        </nav>
-
-        <div class="header-actions">
-          <button class="search-btn">🔍</button>
-          <button class="notification-btn">🔔</button>
-          <router-link to="/register">
-            <button class="register-btn">สมัคร</button>
-          </router-link>
-          <router-link to="/login">
-            <button class="login-btn">เข้าสู่ระบบ</button>
-          </router-link>
-          <button class="user-avatar">👤</button>
-        </div>
-      </div>
-    </header>
+    <!-- Navigator Component -->
+    <Navigator />
 
     <!-- Hero Banner - Featured Content -->
     <section class="hero-banner">
@@ -108,11 +82,9 @@
     </section>
 
     <!-- Tagline Bar -->
-    <div class="tagline-bar" style="background: transparent; padding: 3rem 2rem;">
+    <div class="tagline-bar">
       <div class="container">
-        <h2 style="font-size: 2.5rem; color: white;">
-          CYBERCAR ศูนย์มาตราฐานทำความสะอาดรถยนต์
-        </h2>
+        <h2>CYBERCAR ศูนย์มาตราฐานทำความสะอาดรถยนต์</h2>
       </div>
     </div>
 
@@ -289,14 +261,14 @@
     <!-- Contact Info Bar -->
     <section class="contact-bar">
       <div class="container">
-        <p>ติดต่อสอบถาม</p>
+        <p>ติดต่อสอบถาม: 02-XXX-XXXX | Line: @cybercar | Email: info@cybercar.com</p>
       </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
       <div class="container">
-        <p>&copy; 2028 CYBERCAR. All rights reserved.</p>
+        <p>&copy; 2024 CYBERCAR. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -304,6 +276,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import Navigator from '../components/Navigator.vue';
 
 const router = useRouter();
 
@@ -335,123 +308,6 @@ const goToCarTypes = () => {
   background: #0a0a0a;
   color: white;
   font-family: 'Rajdhani', 'Sarabun', sans-serif;
-}
-
-/* Header */
-.header {
-  background: rgba(0, 0, 0, 0.98);
-  border-bottom: 1px solid rgba(255, 0, 0, 0.2);
-  padding: 1rem 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-}
-
-.header .container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  text-decoration: none;
-}
-
-.logo-text {
-  color: #dc2626;
-  font-size: 1.8rem;
-  font-weight: 900;
-  letter-spacing: 3px;
-  text-decoration: none;
-}
-
-.nav {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-}
-
-.nav a {
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.nav a.active {
-  color: white;
-  font-weight: 700;
-}
-
-.nav a:hover {
-  color: #dc2626;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-btn, .notification-btn {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.search-btn:hover, .notification-btn:hover {
-  color: #dc2626;
-}
-
-.register-btn, .login-btn {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 0.5rem 1.2rem;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-size: 0.9rem;
-}
-
-.login-btn {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.register-btn:hover, .login-btn:hover {
-  background: white;
-  color: #000;
-  border-color: white;
-}
-
-.user-avatar {
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.4rem;
-  width: 40px;
-  height: 40px;
-  transition: all 0.3s;
-}
-
-.user-avatar:hover {
-  background: white;
-  color: #000;
 }
 
 /* Hero Banner */
@@ -506,6 +362,12 @@ const goToCarTypes = () => {
   padding: 1rem;
   border-radius: 10px;
   border-left: 3px solid #dc2626;
+  transition: all 0.3s;
+}
+
+.info-item:hover {
+  background: rgba(220, 38, 38, 0.1);
+  transform: translateX(5px);
 }
 
 .info-item .icon {
@@ -607,12 +469,12 @@ const goToCarTypes = () => {
 /* Tagline Bar */
 .tagline-bar {
   background: #dc2626;
-  padding: 1rem 2rem;
+  padding: 2rem;
 }
 
 .tagline-bar h2 {
   text-align: center;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: 2px;
 }
@@ -988,8 +850,9 @@ const goToCarTypes = () => {
 
 .contact-bar p {
   text-align: center;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Footer */
@@ -1040,16 +903,6 @@ const goToCarTypes = () => {
 }
 
 @media (max-width: 768px) {
-  .header .container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
   .cta-title {
     font-size: 2.5rem;
   }
@@ -1078,6 +931,10 @@ const goToCarTypes = () => {
 @media (max-width: 480px) {
   .services-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .hero-banner {
+    margin-top: 60px;
   }
 }
 </style>

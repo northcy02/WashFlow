@@ -1,37 +1,7 @@
 <template>
   <div class="services-page">
-    <!-- Header Navigation -->
-    <header class="header">
-      <div class="container">
-        <router-link to="/" class="logo">
-          <div class="logo-icon">
-              <path d="M10 20 L25 10 L40 20 L35 35 L15 35 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-              <line x1="25" y1="10" x2="25" y2="25" stroke="currentColor" stroke-width="2"/>
-          </div>
-          <span class="logo-text">WASHFLOW</span>
-        </router-link>
-        
-        <nav class="nav">
-          <router-link to="/services" class="active">การบริการ</router-link>
-          <router-link to="/booking">จองคิวล้างรถ</router-link>
-          <router-link to="/">หน้าหลัก</router-link>
-          <router-link to="/car-types">ประเภทรถ</router-link>
-          <router-link to="#history">ประวัติการใช้งาน</router-link>
-        </nav>
-
-        <div class="header-actions">
-          <button class="search-btn">🔍</button>
-          <button class="notification-btn">🔔</button>
-          <router-link to="/register">
-            <button class="btn-register">สมัคร</button>
-          </router-link>
-          <router-link to="/login">
-            <button class="btn-login">เข้าสู่ระบบ</button>
-          </router-link>
-          <button class="user-avatar">👤</button>
-        </div>
-      </div>
-    </header>
+    <!-- Navigator Component -->
+    <Navigator />
 
     <!-- Services Hero Section -->
     <section class="services-hero">
@@ -45,7 +15,7 @@
           
           <div class="services-grid">
             <!-- Service 1 -->
-            <div class="service-card">
+            <div class="service-card" @click="selectService('coating')">
               <div class="service-icon">
                 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 28l4-8h32l4 8M12 28v12h40V28M12 40h4m24 0h4" 
@@ -58,10 +28,11 @@
               </div>
               <p class="service-name">เคลือบสีรถ</p>
               <p class="service-price">150.-</p>
+              <p class="service-desc">เคลือบแก้วป้องกันสีรถ</p>
             </div>
 
             <!-- Service 2 -->
-            <div class="service-card">
+            <div class="service-card" @click="selectService('wash')">
               <div class="service-icon">
                 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 28l4-8h32l4 8M12 28v12h40V28" 
@@ -79,25 +50,28 @@
               </div>
               <p class="service-name">ล้างรถ</p>
               <p class="service-price">200.-</p>
+              <p class="service-desc">ล้างรถทั่วทั้งคัน</p>
             </div>
 
             <!-- Service 3 -->
-            <div class="service-card">
+            <div class="service-card" @click="selectService('vacuum')">
               <div class="service-icon">
                 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M24 20h16v16h-16z" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="32" cy="28" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
-                  <path d="M28 44l4-8 4 8" fill="none" stroke="currentColor" stroke-width="2"/>
+                  <rect x="20" y="28" width="24" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/>
+                  <path d="M32 28V16M28 16h8M30 12h4" stroke="currentColor" stroke-width="2"/>
+                  <line x1="24" y1="32" x2="40" y2="32" stroke="currentColor" stroke-width="2"/>
                   <line x1="24" y1="36" x2="40" y2="36" stroke="currentColor" stroke-width="2"/>
-                  <path d="M20 28h4M40 28h4M32 16v4M32 36v4" stroke="currentColor" stroke-width="2"/>
+                  <line x1="24" y1="40" x2="40" y2="40" stroke="currentColor" stroke-width="2"/>
+                  <path d="M44 36h4M44 32h6M44 40h3" stroke="currentColor" stroke-width="2"/>
                 </svg>
               </div>
               <p class="service-name">ดูดฝุ่น</p>
               <p class="service-price">80.-</p>
+              <p class="service-desc">ทำความสะอาดภายใน</p>
             </div>
 
             <!-- Service 4 -->
-            <div class="service-card">
+            <div class="service-card" @click="selectService('polish')">
               <div class="service-icon">
                 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 26l4-8h32l4 8M12 26v14h40V26" 
@@ -111,10 +85,11 @@
               </div>
               <p class="service-name">ขัดสีรถ</p>
               <p class="service-price">1,000.-</p>
+              <p class="service-desc">ขัดเงาสีรถให้เหมือนใหม่</p>
             </div>
 
             <!-- Service 5 -->
-            <div class="service-card">
+            <div class="service-card" @click="selectService('interior')">
               <div class="service-icon">
                 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                   <rect x="22" y="18" width="20" height="20" rx="2" 
@@ -127,7 +102,15 @@
               </div>
               <p class="service-name">ซักเบาะ</p>
               <p class="service-price">2,000.-</p>
+              <p class="service-desc">ทำความสะอาดเบาะทุกที่นั่ง</p>
             </div>
+          </div>
+
+          <!-- Book Now Button -->
+          <div class="action-section">
+            <button class="btn-book-service" @click="goToBooking">
+              จองบริการเลย
+            </button>
           </div>
         </div>
       </div>
@@ -142,8 +125,21 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import Navigator from '../components/Navigator.vue';
 
 const router = useRouter();
+
+const selectService = (service: string) => {
+  console.log('Selected service:', service);
+  router.push({
+    path: '/booking',
+    query: { service: service }
+  });
+};
+
+const goToBooking = () => {
+  router.push('/booking');
+};
 </script>
 
 <style scoped>
@@ -158,139 +154,6 @@ const router = useRouter();
   background: #000;
   color: white;
   font-family: 'Rajdhani', 'Sarabun', sans-serif;
-}
-
-/* Header */
-.header {
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid rgba(255, 0, 0, 0.3);
-  padding: 1rem 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-}
-
-.header .container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  text-decoration: none;
-}
-
-.logo-icon {
-  width: 35px;
-  height: 35px;
-  color: #dc2626;
-}
-
-.logo-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.logo-text {
-  color: #dc2626;
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-.nav {
-  display: flex;
-  gap: 2.5rem;
-  align-items: center;
-}
-
-.nav a {
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.3s;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.nav a.active {
-  color: white;
-  font-weight: 700;
-}
-
-.nav a:hover {
-  color: #dc2626;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-btn, .notification-btn {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.search-btn:hover, .notification-btn:hover {
-  color: #dc2626;
-}
-
-.btn-register, .btn-login {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 0.5rem 1.5rem;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 700;
-  transition: all 0.3s;
-  font-size: 0.85rem;
-  letter-spacing: 1px;
-}
-
-.btn-login {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.btn-register:hover, .btn-login:hover {
-  background: white;
-  color: #000;
-  border-color: white;
-}
-
-.user-avatar {
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  color: white;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  width: 40px;
-  height: 40px;
-  transition: all 0.3s;
-}
-
-.user-avatar:hover {
-  background: #dc2626;
-  border-color: #dc2626;
 }
 
 /* Services Hero Section */
@@ -389,7 +252,7 @@ const router = useRouter();
   grid-template-columns: repeat(5, 1fr);
   gap: 2rem;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 auto 3rem;
 }
 
 .service-card {
@@ -472,6 +335,13 @@ const router = useRouter();
   font-weight: 900;
   color: #dc2626;
   text-shadow: 0 0 15px rgba(220, 38, 38, 0.6);
+  margin-bottom: 0.5rem;
+}
+
+.service-desc {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
 }
 
 .service-card:hover .service-name {
@@ -485,6 +355,36 @@ const router = useRouter();
   transform: scale(1.1);
 }
 
+.service-card:hover .service-desc {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Action Section */
+.action-section {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.btn-book-service {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 1.2rem 4rem;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.btn-book-service:hover {
+  background: #b91c1c;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(220, 38, 38, 0.6);
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .services-grid {
@@ -493,17 +393,6 @@ const router = useRouter();
 }
 
 @media (max-width: 768px) {
-  .header .container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
-  }
-  
   .main-title {
     font-size: 2.5rem;
   }

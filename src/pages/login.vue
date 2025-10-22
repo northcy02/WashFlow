@@ -1,33 +1,20 @@
 <template>
   <div class="login-page">
-    <!-- Header Navigation -->
-    <header class="header">
-      <div class="container">
-        <div class="logo">
-          <div class="logo-icon">🚗</div>
-          <span class="logo-text">WASHFLOW</span>
-        </div>
-        
-        <nav class="nav">
-          <a href="/">การบริการ</a>
-          <a href="/">จองคิวล้างรถ</a>
-          <router-link to="/" class="active">HOME</router-link>
-          <a href="/">ประเภทบริการ</a>
-          <a href="/">ประวัติการใช้งาน</a>
-        </nav>
-
-        <div class="header-actions">
-          <router-link to="/register">
-            <button class="register-btn">REGISTER</button>
-          </router-link>
-          <router-link to="/login">
-            <button class="login-btn">LOGIN NOW</button>
-          </router-link>
-          <button class="cart-btn">🛒</button>
-          <button class="user-btn">👤</button>
+    <!-- Alert Message -->
+    <transition name="slide-down">
+      <div v-if="alertMessage" :class="['alert', `alert-${alertType}`]">
+        <div class="alert-content">
+          <span class="alert-icon">
+            {{ alertType === 'success' ? '✓' : alertType === 'warning' ? '⚠' : '✕' }}
+          </span>
+          <span class="alert-text">{{ alertMessage }}</span>
+          <button @click="closeAlert" class="alert-close">×</button>
         </div>
       </div>
-    </header>
+    </transition>
+
+    <!-- Navigator Component -->
+    <Navigator />
 
     <!-- Background with car wash image -->
     <div class="page-content">
@@ -43,6 +30,7 @@
               type="text" 
               placeholder=""
               required
+              :disabled="isLoading"
             >
           </div>
 
@@ -53,10 +41,18 @@
               type="password" 
               placeholder=""
               required
+              :disabled="isLoading"
             >
           </div>
 
-          <button type="submit" class="login-submit-btn">LOGIN</button>
+          <button 
+            type="submit" 
+            class="login-submit-btn"
+            :disabled="isLoading"
+          >
+            <span v-if="!isLoading">LOGIN</span>
+            <span v-else class="loading-spinner">⌛ กำลังเข้าสู่ระบบ...</span>
+          </button>
         </form>
 
         <div class="register-link">
@@ -73,8 +69,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+import Navigator from '@/components/Navigator.vue'
 
 const router = useRouter()
 
@@ -83,17 +81,81 @@ const formData = reactive({
   password: ''
 })
 
-const handleLogin = () => {
+const alertMessage = ref('')
+const alertType = ref('')
+const isLoading = ref(false)
+
+const showAlert = (message: string, type: string = 'error') => {
+  alertMessage.value = message
+  alertType.value = type
+  
+  // Auto close after 4 seconds
+  setTimeout(() => {
+    closeAlert()
+  }, 4000)
+}
+
+const closeAlert = () => {
+  alertMessage.value = ''
+  alertType.value = ''
+}
+
+const handleLogin = async () => {
+  // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
   if (!formData.username || !formData.password) {
-    alert('กรุณากรอกข้อมูลให้ครบถ้วน!')
+    showAlert('กรุณากรอกข้อมูลให้ครบถ้วน!', 'warning')
     return
   }
-  
-  console.log('Login:', formData)
-  alert('เข้าสู่ระบบสำเร็จ!')
-  
-  // Redirect to home
-  router.push('/')
+
+  isLoading.value = true
+
+  try {
+    console.log('🔐 Attempting login...')
+    console.log('Username:', formData.username)
+
+    // เรียก API Login
+    const res = await axios.post('http://localhost:3000/api/auth/login', {
+      username: formData.username,
+      password: formData.password
+    })
+
+    console.log('✅ Login response:', res.data)
+
+    // แสดงข้อความสำเร็จ
+    showAlert('เข้าสู่ระบบสำเร็จ!', 'success')
+
+    // บันทึกข้อมูล user ลง localStorage
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    localStorage.setItem('isLoggedIn', 'true')
+
+    // เคลียร์ฟอร์ม
+    formData.username = ''
+    formData.password = ''
+
+    // รอ 1.5 วินาทีแล้วไปหน้า Home
+    setTimeout(() => {
+      router.push('/')
+    }, 1500)
+
+  } catch (err: any) {
+    console.error('❌ Login error:', err)
+    
+    if (err.response) {
+      // Backend ตอบกลับมาพร้อม error
+      console.error('Error response:', err.response.data)
+      showAlert(err.response.data.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ!', 'error')
+    } else if (err.request) {
+      // ไม่ได้รับการตอบกลับจาก Backend
+      console.error('No response from server')
+      showAlert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่า Backend รันอยู่หรือไม่', 'error')
+    } else {
+      // Error อื่นๆ
+      console.error('Error:', err.message)
+      showAlert('เกิดข้อผิดพลาดที่ไม่คาดคิด', 'error')
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -113,107 +175,95 @@ const handleLogin = () => {
   position: relative;
 }
 
-/* Header */
-.header {
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.8rem 0;
+/* Alert Styles */
+.alert {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
+  top: 6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  min-width: 400px;
+  max-width: 500px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  animation: shake 0.5s;
 }
 
-.header .container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
+.alert-content {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  gap: 1rem;
 }
 
-.logo-icon {
+.alert-icon {
   font-size: 1.5rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
-.logo-text {
-  color: #dc2626;
-  font-size: 1.3rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.nav {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-}
-
-.nav a {
-  color: white;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.3s;
-  font-weight: 400;
-}
-
-.nav a.active {
-  color: white;
-  font-weight: 700;
-}
-
-.nav a:hover {
-  color: #dc2626;
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-}
-
-.register-btn, .login-btn {
-  background: transparent;
-  color: white;
-  border: 1.5px solid white;
-  padding: 0.5rem 1.2rem;
-  border-radius: 5px;
-  cursor: pointer;
+.alert-text {
+  flex: 1;
+  font-size: 0.95rem;
   font-weight: 500;
-  transition: all 0.3s;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-.register-btn:hover, .login-btn:hover {
-  background: white;
-  color: #000;
-  transform: translateY(-1px);
-}
-
-.cart-btn, .user-btn {
-  background: transparent;
-  border: 1.5px solid white;
-  border-radius: 5px;
-  color: white;
-  font-size: 1.1rem;
+.alert-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.8rem;
   cursor: pointer;
-  padding: 0.4rem 0.6rem;
-  transition: all 0.3s;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.3s;
 }
 
-.cart-btn:hover, .user-btn:hover {
-  background: white;
-  color: #000;
+.alert-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.alert-error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+/* Alert Animation */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-down-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-50%) translateY(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(-50%) translateY(5px); }
 }
 
 /* Page Content */
@@ -279,6 +329,11 @@ const handleLogin = () => {
   transition: all 0.3s;
 }
 
+.form-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .form-group input::placeholder {
   color: rgba(255, 255, 255, 0.3);
 }
@@ -303,11 +358,26 @@ const handleLogin = () => {
   text-transform: uppercase;
 }
 
-.login-submit-btn:hover {
+.login-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-submit-btn:not(:disabled):hover {
   background: white;
   color: #000;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+}
+
+.loading-spinner {
+  display: inline-block;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .register-link {
@@ -346,6 +416,11 @@ const handleLogin = () => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .alert {
+    min-width: 90%;
+    max-width: 90%;
+  }
+
   .header .container {
     flex-direction: column;
     gap: 1rem;

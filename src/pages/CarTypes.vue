@@ -1,33 +1,7 @@
 <template>
   <div class="car-types-page">
-    <!-- Header Navigation -->
-    <header class="header">
-      <div class="container">
-        <router-link to="/" class="logo">
-          <span class="logo-text">WASHFLOW</span>
-        </router-link>
-        
-        <nav class="nav">
-          <router-link to="/services">การบริการ</router-link>
-          <router-link to="/booking">จองคิวล้างรถ</router-link>
-          <router-link to="/">HOME</router-link>
-          <router-link to="/car-types" class="active">ประเภทรถ</router-link>
-          <router-link to="/history">ประวัติการใช้งาน</router-link>
-        </nav>
-
-        <div class="header-actions">
-          <button class="search-btn">🔍</button>
-          <button class="notification-btn">🔔</button>
-          <router-link to="/register">
-            <button class="btn-register">สมัคร</button>
-          </router-link>
-          <router-link to="/login">
-            <button class="btn-login">เข้าสู่ระบบ</button>
-          </router-link>
-          <button class="user-avatar">👤</button>
-        </div>
-      </div>
-    </header>
+    <!-- Navigator Component -->
+    <Navigator />
 
     <!-- Car Types Section -->
     <section class="car-types-hero">
@@ -51,6 +25,7 @@
               </svg>
             </div>
             <p class="car-type-name">รถเก๋ง</p>
+            <p class="car-type-desc">Sedan</p>
           </div>
 
           <!-- Type 2: Pickup Truck -->
@@ -67,6 +42,7 @@
               </svg>
             </div>
             <p class="car-type-name">รถกระบะ</p>
+            <p class="car-type-desc">Pickup Truck</p>
           </div>
 
           <!-- Type 3: Sports Car -->
@@ -83,6 +59,7 @@
               </svg>
             </div>
             <p class="car-type-name">รถสปอร์ต</p>
+            <p class="car-type-desc">Sports Car</p>
           </div>
 
           <!-- Type 4: Van -->
@@ -103,6 +80,7 @@
               </svg>
             </div>
             <p class="car-type-name">รถตู้</p>
+            <p class="car-type-desc">Van</p>
           </div>
 
           <!-- Type 5: Motorcycle -->
@@ -120,6 +98,7 @@
               </svg>
             </div>
             <p class="car-type-name">มอเตอร์ไซค์</p>
+            <p class="car-type-desc">Motorcycle</p>
           </div>
         </div>
       </div>
@@ -141,6 +120,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import Navigator from '../components/Navigator.vue';
 
 const router = useRouter();
 
@@ -165,127 +145,6 @@ const selectCarType = (type: string) => {
   background: #000;
   color: white;
   font-family: 'Rajdhani', 'Sarabun', sans-serif;
-}
-
-/* Header */
-.header {
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid rgba(255, 0, 0, 0.3);
-  padding: 1rem 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-}
-
-.header .container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-}
-
-.logo-text {
-  color: #dc2626;
-  font-size: 1.8rem;
-  font-weight: 900;
-  letter-spacing: 3px;
-}
-
-.nav {
-  display: flex;
-  gap: 2.5rem;
-  align-items: center;
-}
-
-.nav a {
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.3s;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.nav a.active {
-  color: white;
-  font-weight: 700;
-}
-
-.nav a:hover {
-  color: #dc2626;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-btn, .notification-btn {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.search-btn:hover, .notification-btn:hover {
-  color: #dc2626;
-}
-
-.btn-register, .btn-login {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 0.5rem 1.5rem;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 700;
-  transition: all 0.3s;
-  font-size: 0.85rem;
-  letter-spacing: 1px;
-}
-
-.btn-login {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.btn-register:hover, .btn-login:hover {
-  background: white;
-  color: #000;
-  border-color: white;
-}
-
-.user-avatar {
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  color: white;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  width: 40px;
-  height: 40px;
-  transition: all 0.3s;
-}
-
-.user-avatar:hover {
-  background: #dc2626;
-  border-color: #dc2626;
 }
 
 /* Car Types Hero Section */
@@ -445,12 +304,24 @@ const selectCarType = (type: string) => {
   letter-spacing: 1px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
   transition: all 0.3s;
+  margin-bottom: 0.5rem;
+}
+
+.car-type-desc {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  transition: all 0.3s;
 }
 
 .car-type-card:hover .car-type-name {
   color: #fff;
   text-shadow: 0 0 20px rgba(220, 38, 38, 1);
   transform: scale(1.1);
+}
+
+.car-type-card:hover .car-type-desc {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Footer */
@@ -488,17 +359,6 @@ const selectCarType = (type: string) => {
 }
 
 @media (max-width: 768px) {
-  .header .container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
-  }
-  
   .car-types-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;

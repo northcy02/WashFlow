@@ -1,33 +1,7 @@
 <template>
   <div class="history-page">
-    <!-- Header Navigation -->
-    <header class="header">
-      <div class="container">
-        <router-link to="/" class="logo">
-          <span class="logo-text">WASHFLOW</span>
-        </router-link>
-        
-        <nav class="nav">
-          <router-link to="/services">การบริการ</router-link>
-          <router-link to="/booking">จองคิวล้างรถ</router-link>
-          <router-link to="/">หน้าหลัก</router-link>
-          <router-link to="/car-types">ประเภทรถ</router-link>
-          <router-link to="/history" class="active">ประวัติการใช้งาน</router-link>
-        </nav>
-
-        <div class="header-actions">
-          <button class="search-btn">🔍</button>
-          <button class="notification-btn">🔔</button>
-          <router-link to="/register">
-            <button class="btn-register">สมัคร</button>
-          </router-link>
-          <router-link to="/login">
-            <button class="btn-login">เข้าสู่ระบบ</button>
-          </router-link>
-          <button class="user-avatar">👤</button>
-        </div>
-      </div>
-    </header>
+    <!-- Navigator Component -->
+    <Navigator />
 
     <!-- History Content -->
     <section class="history-section">
@@ -35,8 +9,63 @@
         <h1 class="main-title">ประวัติการใช้งาน</h1>
         
         <div class="history-content">
-          <p class="no-history">ยังไม่มีประวัติการใช้งาน</p>
-          <!-- เพิ่มเนื้อหาประวัติตามต้องการ -->
+          <!-- No History Message -->
+          <div v-if="historyList.length === 0" class="no-history">
+            <div class="no-history-icon">📋</div>
+            <p>ยังไม่มีประวัติการใช้งาน</p>
+            <router-link to="/booking">
+              <button class="btn-book-now">จองบริการเลย</button>
+            </router-link>
+          </div>
+
+          <!-- History List -->
+          <div v-else class="history-list">
+            <div 
+              v-for="(item, index) in historyList" 
+              :key="index"
+              class="history-card"
+            >
+              <div class="history-header">
+                <div class="history-date">
+                  <span class="icon">📅</span>
+                  <span>{{ item.date }}</span>
+                </div>
+                <div class="history-status" :class="item.status">
+                  {{ item.statusText }}
+                </div>
+              </div>
+
+              <div class="history-body">
+                <div class="history-info">
+                  <div class="info-row">
+                    <span class="label">ประเภทรถ:</span>
+                    <span class="value">{{ item.carType }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">บริการ:</span>
+                    <span class="value">{{ item.services.join(', ') }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">ราคา:</span>
+                    <span class="value price">{{ item.price }} บาท</span>
+                  </div>
+                </div>
+
+                <div class="history-actions">
+                  <button class="btn-detail" @click="viewDetail(item)">
+                    ดูรายละเอียด
+                  </button>
+                  <button 
+                    v-if="item.status === 'completed'"
+                    class="btn-rebook" 
+                    @click="rebook(item)"
+                  >
+                    จองอีกครั้ง
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -44,9 +73,52 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import Navigator from '../components/Navigator.vue';
 
 const router = useRouter();
+
+// Sample History Data
+const historyList = ref([
+  {
+    id: 1,
+    date: '15 ธันวาคม 2567',
+    carType: 'รถเก๋ง',
+    services: ['ล้างรถ', 'ขัดสี'],
+    price: 1200,
+    status: 'completed',
+    statusText: 'เสร็จสิ้น'
+  },
+  {
+    id: 2,
+    date: '10 ธันวาคม 2567',
+    carType: 'รถกระบะ',
+    services: ['เคลือบแก้ว', 'ดูดฝุ่น'],
+    price: 950,
+    status: 'completed',
+    statusText: 'เสร็จสิ้น'
+  },
+  {
+    id: 3,
+    date: '5 ธันวาคม 2567',
+    carType: 'รถเก๋ง',
+    services: ['ล้างรถ'],
+    price: 200,
+    status: 'cancelled',
+    statusText: 'ยกเลิก'
+  }
+]);
+
+const viewDetail = (item: any) => {
+  console.log('View detail:', item);
+  alert(`รายละเอียดการจอง\n\nวันที่: ${item.date}\nรถ: ${item.carType}\nบริการ: ${item.services.join(', ')}\nราคา: ${item.price} บาท`);
+};
+
+const rebook = (item: any) => {
+  console.log('Rebook:', item);
+  router.push('/booking');
+};
 </script>
 
 <style scoped>
@@ -63,122 +135,6 @@ const router = useRouter();
   font-family: 'Rajdhani', 'Sarabun', sans-serif;
 }
 
-/* Header - เหมือนเดิม */
-.header {
-  background: rgba(0, 0, 0, 0.98);
-  border-bottom: 1px solid rgba(255, 0, 0, 0.2);
-  padding: 1rem 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-}
-
-.header .container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  text-decoration: none;
-}
-
-.logo-text {
-  color: #dc2626;
-  font-size: 1.8rem;
-  font-weight: 900;
-  letter-spacing: 3px;
-}
-
-.nav {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-}
-
-.nav a {
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.nav a.active {
-  color: white;
-  font-weight: 700;
-}
-
-.nav a:hover {
-  color: #dc2626;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-btn, .notification-btn {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.search-btn:hover, .notification-btn:hover {
-  color: #dc2626;
-}
-
-.btn-register, .btn-login {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 0.5rem 1.2rem;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-size: 0.9rem;
-}
-
-.btn-login {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.btn-register:hover, .btn-login:hover {
-  background: white;
-  color: #000;
-  border-color: white;
-}
-
-.user-avatar {
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.4rem;
-  width: 40px;
-  height: 40px;
-  transition: all 0.3s;
-}
-
-.user-avatar:hover {
-  background: white;
-  color: #000;
-}
-
 /* History Section */
 .history-section {
   margin-top: 80px;
@@ -188,7 +144,7 @@ const router = useRouter();
 }
 
 .history-section .container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -201,39 +157,240 @@ const router = useRouter();
   text-transform: uppercase;
   letter-spacing: 4px;
   text-shadow: 0 0 40px rgba(220, 38, 38, 0.8);
+  position: relative;
+}
+
+.main-title::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #dc2626, transparent);
 }
 
 .history-content {
+  min-height: 400px;
+}
+
+/* No History State */
+.no-history {
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid rgba(220, 38, 38, 0.3);
   border-radius: 15px;
-  padding: 3rem;
-  min-height: 400px;
+  padding: 4rem 3rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  gap: 2rem;
 }
 
-.no-history {
+.no-history-icon {
+  font-size: 5rem;
+  opacity: 0.5;
+}
+
+.no-history p {
   font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.btn-book-now {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-book-now:hover {
+  background: #b91c1c;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(220, 38, 38, 0.5);
+}
+
+/* History List */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.history-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(220, 38, 38, 0.2);
+  border-radius: 15px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.history-card:hover {
+  border-color: rgba(220, 38, 38, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(5px);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.history-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.history-date .icon {
+  font-size: 1.3rem;
+}
+
+.history-status {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.history-status.completed {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid #10b981;
+}
+
+.history-status.cancelled {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.history-status.pending {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid #fbbf24;
+}
+
+.history-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.history-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.info-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.info-row .label {
+  color: rgba(255, 255, 255, 0.6);
+  min-width: 100px;
+}
+
+.info-row .value {
+  color: white;
+  font-weight: 600;
+}
+
+.info-row .value.price {
+  color: #dc2626;
+  font-size: 1.2rem;
+}
+
+.history-actions {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+.btn-detail, .btn-rebook {
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  white-space: nowrap;
+}
+
+.btn-detail {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-detail:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: white;
+}
+
+.btn-rebook {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-rebook:hover {
+  background: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .header .container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
   .main-title {
     font-size: 2rem;
+  }
+
+  .history-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .btn-detail, .btn-rebook {
+    flex: 1;
+  }
+
+  .no-history {
+    padding: 3rem 1.5rem;
+  }
+
+  .no-history-icon {
+    font-size: 3rem;
+  }
+
+  .no-history p {
+    font-size: 1.2rem;
   }
 }
 </style>

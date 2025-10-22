@@ -1,40 +1,28 @@
 <template>
   <div class="register-page">
-    <!-- Header Navigation -->
-    <header class="header">
-      <div class="container">
-        <!-- คลิก Logo ไปหน้า Home -->
-        <router-link to="/" class="logo">
-          <div class="logo-icon">🚗</div>
-          <span class="logo-text">WASHFLOW</span>
-        </router-link>
-        
-        <nav class="nav">
-          <router-link to="/">การบริการ</router-link>
-          <router-link to="/">จองคิวล้างรถ</router-link>
-          <router-link to="/" class="active">HOME</router-link>
-          <router-link to="/">ประเภทรถ</router-link>
-          <router-link to="/">ประวัติการใช้งาน</router-link>
-        </nav>
-
-        <div class="header-actions">
-          <router-link to="/register">
-            <button class="register-btn">REGISTER</button>
-          </router-link>
-          <router-link to="/login">
-            <button class="login-btn">LOGIN NOW</button>
-          </router-link>
-          <button class="cart-btn">🛒</button>
-          <button class="user-btn">👤</button>
+    <!-- Custom Alert -->
+    <transition name="fade">
+      <div v-if="alertMessage" class="custom-alert" :class="alertType">
+        <div class="alert-content">
+          <div class="alert-icon">
+            <span v-if="alertType === 'success'">✓</span>
+            <span v-else-if="alertType === 'error'">✕</span>
+            <span v-else>⚠</span>
+          </div>
+          <div class="alert-message">{{ alertMessage }}</div>
+          <button class="alert-close" @click="closeAlert">×</button>
         </div>
       </div>
-    </header>
+    </transition>
+
+    <!-- Navigator Component -->
+    <Navigator />
 
     <!-- Background with car wash image -->
     <div class="page-content">
       <!-- Register Form Modal -->
       <div class="register-modal">
-        <h2 class="modal-title">Registeter / สมัครใช้งาน</h2>
+        <h2 class="modal-title">Register / สมัครใช้งาน</h2>
         
         <form @submit.prevent="handleRegister" class="register-form">
           <div class="form-group">
@@ -42,8 +30,9 @@
             <input 
               v-model="formData.username" 
               type="text" 
-              placeholder=""
+              placeholder="กรอก Username"
               required
+              :disabled="isLoading"
             >
           </div>
 
@@ -52,8 +41,9 @@
             <input 
               v-model="formData.password" 
               type="password" 
-              placeholder=""
+              placeholder="กรอก Password"
               required
+              :disabled="isLoading"
             >
           </div>
 
@@ -62,13 +52,21 @@
             <input 
               v-model="formData.confirmPassword" 
               type="password" 
-              placeholder=""
+              placeholder="ยืนยัน Password อีกครั้ง"
               required
+              :disabled="isLoading"
             >
           </div>
 
-          <button type="submit" class="confirm-btn">CONFIRM</button>
+          <button type="submit" class="confirm-btn" :disabled="isLoading">
+            <span v-if="isLoading">กำลังสมัคร...</span>
+            <span v-else>CONFIRM</span>
+          </button>
         </form>
+
+        <div class="login-link">
+          <router-link to="/login">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</router-link>
+        </div>
       </div>
 
       <!-- Bottom Text -->
@@ -80,8 +78,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+import Navigator from '../components/Navigator.vue'
 
 const router = useRouter()
 
@@ -91,24 +91,96 @@ const formData = reactive({
   confirmPassword: ''
 })
 
-const handleRegister = () => {
+const alertMessage = ref('')
+const alertType = ref('') // 'success', 'error', 'warning'
+const isLoading = ref(false)
+
+// ฟังก์ชันแสดง Alert
+const showAlert = (message: string, type: string = 'error') => {
+  alertMessage.value = message
+  alertType.value = type
+  
+  // ปิด Alert อัตโนมัติหลัง 4 วินาที
+  setTimeout(() => {
+    closeAlert()
+  }, 4000)
+}
+
+// ฟังก์ชันปิด Alert
+const closeAlert = () => {
+  alertMessage.value = ''
+  alertType.value = ''
+}
+
+const handleRegister = async () => {
   // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
   if (!formData.username || !formData.password || !formData.confirmPassword) {
-    alert('กรุณากรอกข้อมูลให้ครบถ้วน!')
+    showAlert('กรุณากรอกข้อมูลให้ครบถ้วน!', 'warning')
+    return
+  }
+
+  // ตรวจสอบความยาว username
+  if (formData.username.length < 4) {
+    showAlert('Username ต้องมีอย่างน้อย 4 ตัวอักษร', 'warning')
+    return
+  }
+
+  // ตรวจสอบความยาว password
+  if (formData.password.length < 6) {
+    showAlert('Password ต้องมีอย่างน้อย 6 ตัวอักษร', 'warning')
     return
   }
 
   // ตรวจสอบว่ารหัสผ่านตรงกันหรือไม่
   if (formData.password !== formData.confirmPassword) {
-    alert('รหัสผ่านไม่ตรงกัน!')
+    showAlert('รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง!', 'error')
     return
   }
-  
-  console.log('Register:', formData)
-  alert('สมัครสมาชิกสำเร็จ!')
-  
-  // ไปหน้า Home หลังสมัครสำเร็จ
-  router.push('/')
+
+  isLoading.value = true
+
+  try {
+    console.log('📝 Attempting register...')
+    console.log('Username:', formData.username)
+
+    // ส่งข้อมูลไป Backend
+    const res = await axios.post('http://localhost:3000/api/auth/register', {
+      username: formData.username,
+      password: formData.password
+    })
+
+    // แสดงข้อความสำเร็จ
+    showAlert(res.data.message || 'สมัครสมาชิกสำเร็จ!', 'success')
+    console.log('✅ Register success:', res.data)
+
+    // เคลียร์ฟอร์ม
+    formData.username = ''
+    formData.password = ''
+    formData.confirmPassword = ''
+
+    // ไปหน้า Login หลัง 2 วินาที
+    setTimeout(() => {
+      router.push('/login')
+    }, 2000)
+
+  } catch (err: any) {
+    console.error('❌ Error:', err)
+    
+    if (err.response) {
+      // มี error message จาก backend
+      console.error('Error response:', err.response.data)
+      showAlert(err.response.data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก!', 'error')
+    } else if (err.request) {
+      // ไม่สามารถเชื่อมต่อ backend ได้
+      console.error('No response from server')
+      showAlert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่า Backend รันอยู่หรือไม่', 'error')
+    } else {
+      console.error('Error:', err.message)
+      showAlert('เกิดข้อผิดพลาดที่ไม่คาดคิด', 'error')
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -128,120 +200,102 @@ const handleRegister = () => {
   position: relative;
 }
 
-/* Header */
-.header {
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.8rem 0;
+/* Custom Alert Styles */
+.custom-alert {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  min-width: 400px;
+  max-width: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: slideDown 0.3s ease-out;
 }
 
-.header .container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
+.custom-alert.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.custom-alert.error {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.custom-alert.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.alert-content {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  padding: 1.2rem 1.5rem;
+  gap: 1rem;
 }
 
-.logo {
+.alert-icon {
+  font-size: 1.8rem;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  text-decoration: none; /* เพิ่มบรรทัดนี้ */
-  cursor: pointer; /* เพิ่มบรรทัดนี้ */
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.logo-icon {
-  font-size: 1.5rem;
-}
-
-.logo-text {
-  color: #dc2626;
-  font-size: 1.3rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.nav {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-}
-
-.nav a {
+.alert-message {
+  flex: 1;
   color: white;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.3s;
-  font-weight: 400;
-}
-
-.nav a.active {
-  color: white;
-  font-weight: 700;
-}
-
-.nav a:hover {
-  color: #dc2626;
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-}
-
-.register-btn, .login-btn {
-  background: transparent;
-  color: white;
-  border: 1.5px solid white;
-  padding: 0.5rem 1.2rem;
-  border-radius: 5px;
-  cursor: pointer;
+  font-size: 1rem;
   font-weight: 500;
-  transition: all 0.3s;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  line-height: 1.5;
 }
 
-.register-btn {
-  border-color: #dc2626;
-  color: #dc2626;
-}
-
-.login-btn {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.register-btn:hover, .login-btn:hover {
-  background: white;
-  color: #000;
-  border-color: white;
-  transform: translateY(-1px);
-}
-
-.cart-btn, .user-btn {
-  background: transparent;
-  border: 1.5px solid white;
-  border-radius: 5px;
+.alert-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
   color: white;
-  font-size: 1.1rem;
+  font-size: 1.8rem;
   cursor: pointer;
-  padding: 0.4rem 0.6rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
 }
 
-.cart-btn:hover, .user-btn:hover {
-  background: white;
-  color: #000;
+.alert-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+/* Alert Animation */
+@keyframes slideDown {
+  from {
+    transform: translateX(-50%) translateY(-100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 
 /* Page Content */
@@ -307,13 +361,19 @@ const handleRegister = () => {
   transition: all 0.3s;
 }
 
+.form-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .form-group input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .form-group input:focus {
   outline: none;
   background: rgba(90, 80, 80, 0.85);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.3);
 }
 
 .confirm-btn {
@@ -331,11 +391,36 @@ const handleRegister = () => {
   text-transform: uppercase;
 }
 
-.confirm-btn:hover {
+.confirm-btn:hover:not(:disabled) {
   background: white;
   color: #000;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+}
+
+.confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Login Link */
+.login-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.login-link a {
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+  font-weight: 400;
+}
+
+.login-link a:hover {
+  color: #dc2626;
 }
 
 /* Bottom Text */
@@ -355,15 +440,9 @@ const handleRegister = () => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .header .container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.8rem;
+  .custom-alert {
+    min-width: 90%;
+    max-width: 90%;
   }
   
   .register-modal {

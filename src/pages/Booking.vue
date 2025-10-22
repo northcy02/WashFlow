@@ -1,30 +1,7 @@
 <template>
   <div class="booking-page">
-    <!-- Header -->
-    <header class="header">
-      <div class="container">
-        <router-link to="/" class="logo">
-              <path d="M20 5L35 12.5V27.5L20 35L5 27.5V12.5L20 5Z" stroke="#dc2626" stroke-width="2"/>
-              <circle cx="20" cy="20" r="8" fill="#dc2626"/>
-          <span class="logo-text">WASHFLOW</span>
-        </router-link>
-        
-        <nav class="nav">
-          <router-link to="#service">การบริการ</router-link>
-          <router-link to="#booking">จองคิวล้างรถ</router-link>
-          <router-link to="/">HOME</router-link>
-          <router-link to="#types">ประเภทรถ</router-link>
-          <router-link to="#history">ประวัติการใช้งาน</router-link>
-        </nav>
-
-        <div class="header-actions">
-          <button class="btn-register">REGISTER</button>
-          <button class="btn-login">LOGIN NOW</button>
-          <button class="btn-cart">🛒</button>
-          <button class="btn-user">👤</button>
-        </div>
-      </div>
-    </header>
+    <!-- Navigator Component -->
+    <Navigator />
 
     <!-- Booking Content -->
     <section class="booking-section">
@@ -167,8 +144,8 @@
 
             <div 
               class="service-card"
-              :class="{ active: selectedServices.includes('wax') }"
-              @click="toggleService('wax')"
+              :class="{ active: selectedServices.includes('vacuum') }"
+              @click="toggleService('vacuum')"
             >
               <div class="service-icon">
                 <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2">
@@ -216,8 +193,27 @@
                   <circle cx="48" cy="55" r="2"/>
                 </svg>
               </div>
-              <p>จัดเบาะ</p>
+              <p>ซักเบาะ</p>
               <span class="price">2,000.-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div v-if="selectedVehicle || selectedServices.length > 0" class="summary-section">
+          <h3 class="summary-title">สรุปการจอง</h3>
+          <div class="summary-content">
+            <div v-if="selectedVehicle" class="summary-item">
+              <span class="label">ประเภทรถ:</span>
+              <span class="value">{{ getVehicleName(selectedVehicle) }}</span>
+            </div>
+            <div v-if="selectedServices.length > 0" class="summary-item">
+              <span class="label">บริการที่เลือก:</span>
+              <span class="value">{{ getServiceNames() }}</span>
+            </div>
+            <div class="summary-item total">
+              <span class="label">ราคารวม:</span>
+              <span class="value price-highlight">{{ calculateTotal() }} บาท</span>
             </div>
           </div>
         </div>
@@ -229,7 +225,8 @@
             :disabled="!selectedVehicle || selectedServices.length === 0"
             @click="confirmBooking"
           >
-            CONFIRM
+            <span v-if="!selectedVehicle || selectedServices.length === 0">กรุณาเลือกรถและบริการ</span>
+            <span v-else>ยืนยันการจอง</span>
           </button>
         </div>
       </div>
@@ -239,9 +236,37 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import Navigator from '../components/Navigator.vue';
+
+const router = useRouter();
 
 const selectedVehicle = ref('');
 const selectedServices = ref<string[]>([]);
+
+const servicesPrices: Record<string, number> = {
+  coating: 150,
+  wash: 200,
+  vacuum: 80,
+  polish: 1000,
+  interior: 2000
+};
+
+const servicesNames: Record<string, string> = {
+  coating: 'เคลือบแก้ว',
+  wash: 'ล้างรถ',
+  vacuum: 'ดูดฝุ่น',
+  polish: 'ขัดสี',
+  interior: 'ซักเบาะ'
+};
+
+const vehicleNames: Record<string, string> = {
+  sedan: 'รถเก๋ง',
+  truck: 'รถกระบะ',
+  sport: 'รถสปอร์ต',
+  suv: 'รถตู้',
+  motor: 'มอเตอร์ไซค์'
+};
 
 const toggleService = (service: string) => {
   const index = selectedServices.value.indexOf(service);
@@ -252,10 +277,33 @@ const toggleService = (service: string) => {
   }
 };
 
+const getVehicleName = (type: string) => {
+  return vehicleNames[type] || type;
+};
+
+const getServiceNames = () => {
+  return selectedServices.value.map(s => servicesNames[s]).join(', ');
+};
+
+const calculateTotal = () => {
+  return selectedServices.value.reduce((total, service) => {
+    return total + (servicesPrices[service] || 0);
+  }, 0);
+};
+
 const confirmBooking = () => {
   if (selectedVehicle.value && selectedServices.value.length > 0) {
-    alert(`จองสำเร็จ!\nประเภทรถ: ${selectedVehicle.value}\nบริการ: ${selectedServices.value.join(', ')}`);
-    // Navigate to confirmation page or show success message
+    const total = calculateTotal();
+    const servicesList = getServiceNames();
+    
+    alert(`✅ จองสำเร็จ!\n\n📋 รายละเอียด:\nประเภทรถ: ${getVehicleName(selectedVehicle.value)}\nบริการ: ${servicesList}\n\n💰 ราคารวม: ${total} บาท\n\nขอบคุณที่ใช้บริการ CYBERCAR`);
+    
+    // Reset form
+    selectedVehicle.value = '';
+    selectedServices.value = [];
+    
+    // Navigate to history
+    router.push('/history');
   }
 };
 </script>
@@ -274,100 +322,12 @@ const confirmBooking = () => {
   font-family: 'Kanit', 'Sarabun', sans-serif;
 }
 
-/* Header - same as Home */
-.header {
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid rgba(220, 38, 38, 0.2);
-  padding: 1rem 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  backdrop-filter: blur(15px);
-}
-
-.header .container {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2rem;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  text-decoration: none;
-}
-
-.logo-text {
-  color: #dc2626;
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
-
-.nav {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-}
-
-.nav a {
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.nav a:hover {
-  color: #dc2626;
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-}
-
-.btn-register, .btn-login {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-size: 0.85rem;
-}
-
-.btn-login {
-  background: #dc2626;
-  border-color: #dc2626;
-}
-
-.btn-cart, .btn-user {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.5rem 0.7rem;
-  transition: all 0.3s;
-}
-
 /* Booking Section */
 .booking-section {
   margin-top: 100px;
-  padding: 3rem 2rem;
+  padding: 3rem 2rem 5rem;
   min-height: calc(100vh - 100px);
+  background: linear-gradient(to bottom, #000 0%, #1a1a1a 100%);
 }
 
 .container {
@@ -414,6 +374,7 @@ const confirmBooking = () => {
   text-align: center;
   margin-bottom: 2rem;
   color: white;
+  letter-spacing: 1px;
 }
 
 /* Vehicle Grid */
@@ -432,6 +393,23 @@ const confirmBooking = () => {
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.vehicle-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.vehicle-card:hover::before {
+  left: 100%;
 }
 
 .vehicle-card:hover {
@@ -478,6 +456,22 @@ const confirmBooking = () => {
   cursor: pointer;
   transition: all 0.3s;
   position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.service-card:hover::before {
+  left: 100%;
 }
 
 .service-card:hover {
@@ -516,6 +510,71 @@ const confirmBooking = () => {
   color: #dc2626;
 }
 
+/* Summary Section */
+.summary-section {
+  background: rgba(220, 38, 38, 0.1);
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.summary-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #dc2626;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.summary-item.total {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  padding: 1rem 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.summary-item .label {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.summary-item .value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+}
+
+.summary-item.total .label {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.summary-item.total .value {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.price-highlight {
+  color: #dc2626;
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+}
+
 /* Confirm Button */
 .confirm-section {
   text-align: center;
@@ -528,11 +587,11 @@ const confirmBooking = () => {
   border: 3px solid #dc2626;
   padding: 1.2rem 5rem;
   border-radius: 10px;
-  font-size: 1.8rem;
+  font-size: 1.3rem;
   font-weight: 900;
   cursor: pointer;
   transition: all 0.3s;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
@@ -544,8 +603,10 @@ const confirmBooking = () => {
 }
 
 .btn-confirm:disabled {
-  opacity: 0.3;
+  opacity: 0.4;
   cursor: not-allowed;
+  background: rgba(100, 100, 100, 0.5);
+  border-color: rgba(100, 100, 100, 0.5);
 }
 
 /* Responsive */
@@ -574,7 +635,19 @@ const confirmBooking = () => {
   
   .btn-confirm {
     padding: 1rem 3rem;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
+  }
+
+  .summary-item {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .vehicle-grid, .service-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
