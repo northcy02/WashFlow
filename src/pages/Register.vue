@@ -19,42 +19,127 @@
           <h1>สมัครสมาชิก</h1>
           
           <form @submit.prevent="handleRegister">
+            <!-- ชื่อ-นามสกุล -->
+            <div class="field-group">
+              <div class="field">
+                <label>ชื่อ <span class="required">*</span></label>
+                <input 
+                  v-model="formData.cust_fname" 
+                  type="text" 
+                  placeholder="ชื่อจริง"
+                  required
+                  :disabled="isLoading"
+                >
+              </div>
+
+              <div class="field">
+                <label>นามสกุล <span class="required">*</span></label>
+                <input 
+                  v-model="formData.cust_lname" 
+                  type="text" 
+                  placeholder="นามสกุล"
+                  required
+                  :disabled="isLoading"
+                >
+              </div>
+            </div>
+
+            <!-- เบอร์โทร -->
             <div class="field">
-              <label>ชื่อผู้ใช้</label>
+              <label>เบอร์โทรศัพท์</label>
+              <input 
+                v-model="formData.cust_tel" 
+                type="tel" 
+                placeholder="081-234-5678"
+                :disabled="isLoading"
+                @input="formatPhoneNumber"
+              >
+              <small>รูปแบบ: 081-234-5678 (ไม่บังคับ)</small>
+            </div>
+
+            <!-- ที่อยู่ -->
+            <div class="field">
+              <label>ที่อยู่</label>
+              <textarea 
+                v-model="formData.cust_address" 
+                placeholder="ที่อยู่สำหรับจัดส่งเอกสาร (ไม่บังคับ)"
+                rows="3"
+                :disabled="isLoading"
+              ></textarea>
+            </div>
+
+            <div class="divider">
+              <span>ข้อมูลเข้าสู่ระบบ</span>
+            </div>
+
+            <!-- Username -->
+            <div class="field">
+              <label>ชื่อผู้ใช้ <span class="required">*</span></label>
               <input 
                 v-model="formData.username" 
                 type="text" 
                 placeholder="อย่างน้อย 4 ตัวอักษร"
                 required
                 :disabled="isLoading"
+                @blur="checkUsernameLength"
               >
+              <small v-if="usernameError" class="error">{{ usernameError }}</small>
             </div>
 
+            <!-- Password -->
             <div class="field">
-              <label>รหัสผ่าน</label>
-              <input 
-                v-model="formData.password" 
-                type="password" 
-                placeholder="อย่างน้อย 6 ตัวอักษร"
-                required
-                :disabled="isLoading"
-              >
+              <label>รหัสผ่าน <span class="required">*</span></label>
+              <div class="password-input">
+                <input 
+                  v-model="formData.password" 
+                  :type="showPassword ? 'text' : 'password'"
+                  placeholder="อย่างน้อย 6 ตัวอักษร"
+                  required
+                  :disabled="isLoading"
+                  @blur="checkPasswordStrength"
+                >
+                <button 
+                  type="button" 
+                  class="toggle-password" 
+                  @click="showPassword = !showPassword"
+                  :disabled="isLoading"
+                >
+                  {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+                </button>
+              </div>
+              <small v-if="passwordError" class="error">{{ passwordError }}</small>
             </div>
 
+            <!-- Confirm Password -->
             <div class="field">
-              <label>ยืนยันรหัสผ่าน</label>
-              <input 
-                v-model="formData.confirmPassword" 
-                type="password" 
-                placeholder="กรอกรหัสผ่านอีกครั้ง"
-                required
-                :disabled="isLoading"
-              >
+              <label>ยืนยันรหัสผ่าน <span class="required">*</span></label>
+              <div class="password-input">
+                <input 
+                  v-model="formData.confirmPassword" 
+                  :type="showConfirmPassword ? 'text' : 'password'"
+                  placeholder="กรอกรหัสผ่านอีกครั้ง"
+                  required
+                  :disabled="isLoading"
+                  @blur="checkPasswordMatch"
+                >
+                <button 
+                  type="button" 
+                  class="toggle-password" 
+                  @click="showConfirmPassword = !showConfirmPassword"
+                  :disabled="isLoading"
+                >
+                  {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
+                </button>
+              </div>
+              <small v-if="confirmPasswordError" class="error">{{ confirmPasswordError }}</small>
             </div>
 
             <button type="submit" class="btn primary" :disabled="isLoading">
               <span v-if="!isLoading">สมัครสมาชิก</span>
-              <span v-else class="loading">กำลังสมัคร...</span>
+              <span v-else class="loading">
+                <span class="spinner"></span>
+                กำลังสมัคร...
+              </span>
             </button>
           </form>
 
@@ -63,7 +148,7 @@
           </div>
 
           <router-link to="/login" class="btn secondary">
-            เข้าสู่ระบบ
+            <span>เข้าสู่ระบบ</span>
           </router-link>
         </div>
 
@@ -88,12 +173,23 @@ const router = useRouter();
 const formData = reactive({
   username: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  cust_fname: '',
+  cust_lname: '',
+  cust_tel: '',
+  cust_address: ''
 });
 
 const alertMessage = ref('');
 const alertType = ref('');
 const isLoading = ref(false);
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
+
+// Error messages
+const usernameError = ref('');
+const passwordError = ref('');
+const confirmPasswordError = ref('');
 
 const alertIcon = computed(() => {
   const icons: Record<string, string> = {
@@ -107,7 +203,7 @@ const alertIcon = computed(() => {
 const showAlert = (message: string, type: string = 'error') => {
   alertMessage.value = message;
   alertType.value = type;
-  setTimeout(() => closeAlert(), 4000);
+  setTimeout(() => closeAlert(), 5000);
 };
 
 const closeAlert = () => {
@@ -115,42 +211,118 @@ const closeAlert = () => {
   alertType.value = '';
 };
 
+const formatPhoneNumber = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  let value = input.value.replace(/\D/g, ''); // เอาเฉพาะตัวเลข
+  
+  if (value.length > 10) {
+    value = value.substring(0, 10);
+  }
+  
+  if (value.length > 6) {
+    formData.cust_tel = `${value.substring(0, 3)}-${value.substring(3, 6)}-${value.substring(6)}`;
+  } else if (value.length > 3) {
+    formData.cust_tel = `${value.substring(0, 3)}-${value.substring(3)}`;
+  } else {
+    formData.cust_tel = value;
+  }
+};
+
+const validatePhoneNumber = (phone: string) => {
+  if (!phone) return true; // ไม่บังคับ
+  const phoneRegex = /^[0-9]{3}-[0-9]{3}-[0-9]{4}$/;
+  return phoneRegex.test(phone);
+};
+
+const checkUsernameLength = () => {
+  if (formData.username && formData.username.length < 4) {
+    usernameError.value = 'ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัวอักษร';
+  } else {
+    usernameError.value = '';
+  }
+};
+
+const checkPasswordStrength = () => {
+  if (formData.password && formData.password.length < 6) {
+    passwordError.value = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+  } else {
+    passwordError.value = '';
+  }
+};
+
+const checkPasswordMatch = () => {
+  if (formData.confirmPassword && formData.password !== formData.confirmPassword) {
+    confirmPasswordError.value = 'รหัสผ่านไม่ตรงกัน';
+  } else {
+    confirmPasswordError.value = '';
+  }
+};
+
 const handleRegister = async () => {
+  // Reset errors
+  usernameError.value = '';
+  passwordError.value = '';
+  confirmPasswordError.value = '';
+
   // Validation
-  if (!formData.username || !formData.password || !formData.confirmPassword) {
-    showAlert('กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
+  if (!formData.username || !formData.password || !formData.confirmPassword || 
+      !formData.cust_fname || !formData.cust_lname) {
+    showAlert('กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน', 'warning');
     return;
   }
 
   if (formData.username.length < 4) {
+    usernameError.value = 'ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัวอักษร';
     showAlert('ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัวอักษร', 'warning');
     return;
   }
 
   if (formData.password.length < 6) {
+    passwordError.value = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
     showAlert('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'warning');
     return;
   }
 
   if (formData.password !== formData.confirmPassword) {
+    confirmPasswordError.value = 'รหัสผ่านไม่ตรงกัน';
     showAlert('รหัสผ่านไม่ตรงกัน', 'error');
+    return;
+  }
+
+  // Validate phone if provided
+  if (formData.cust_tel && !validatePhoneNumber(formData.cust_tel)) {
+    showAlert('รูปแบบเบอร์โทรไม่ถูกต้อง (ใช้รูปแบบ 081-234-5678)', 'warning');
     return;
   }
 
   isLoading.value = true;
 
   try {
-    const res = await axios.post('http://localhost:3000/api/auth/register', {
+    console.log('📤 Sending registration data:', {
       username: formData.username,
-      password: formData.password
+      cust_fname: formData.cust_fname,
+      cust_lname: formData.cust_lname,
+      cust_tel: formData.cust_tel,
+      cust_address: formData.cust_address
     });
 
-    showAlert('สมัครสมาชิกสำเร็จ! กำลังนำไปหน้าเข้าสู่ระบบ...', 'success');
+    const res = await axios.post('http://localhost:3000/api/auth/register', {
+      username: formData.username,
+      password: formData.password,
+      cust_fname: formData.cust_fname,
+      cust_lname: formData.cust_lname,
+      cust_tel: formData.cust_tel || null,
+      cust_address: formData.cust_address || null
+    });
+
+    console.log('✅ Register response:', res.data);
+
+    showAlert(`สมัครสมาชิกสำเร็จ! ยินดีต้อนรับคุณ ${formData.cust_fname}`, 'success');
 
     // Clear form
-    formData.username = '';
-    formData.password = '';
-    formData.confirmPassword = '';
+    Object.keys(formData).forEach(key => {
+      formData[key as keyof typeof formData] = '';
+    });
 
     // Redirect to login
     setTimeout(() => {
@@ -158,12 +330,17 @@ const handleRegister = async () => {
     }, 2000);
 
   } catch (err: any) {
-    console.error('Register error:', err);
+    console.error('❌ Register error:', err);
     
     if (err.response) {
-      showAlert(err.response.data.message || 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว', 'error');
+      const errorMsg = err.response.data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
+      showAlert(errorMsg, 'error');
+      
+      if (errorMsg.includes('Username')) {
+        usernameError.value = errorMsg;
+      }
     } else if (err.request) {
-      showAlert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+      showAlert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ', 'error');
     } else {
       showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', 'error');
     }
@@ -268,10 +445,11 @@ const handleRegister = async () => {
   background: 
     linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.85)),
     url('https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=1920') center/cover;
+  background-attachment: fixed;
 }
 
 .container {
-  max-width: 450px;
+  max-width: 550px;
   width: 100%;
 }
 
@@ -300,6 +478,12 @@ form {
   margin-bottom: 1.5rem;
 }
 
+.field-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -312,8 +496,13 @@ form {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.field input {
-  padding: 0.9rem 1.2rem;
+.required {
+  color: #dc2626;
+}
+
+.field input,
+.field textarea {
+  padding: 0.9rem 0.7rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
@@ -323,19 +512,68 @@ form {
   font-family: inherit;
 }
 
-.field input::placeholder {
+.field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
   color: rgba(255, 255, 255, 0.3);
 }
 
-.field input:focus {
+.field input:focus,
+.field textarea:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.08);
   border-color: #dc2626;
 }
 
-.field input:disabled {
+.field input:disabled,
+.field textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.password-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input input {
+  flex: 1;
+  padding-right: 3rem;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  transition: color 0.3s;
+}
+
+.toggle-password:hover:not(:disabled) {
+  color: #dc2626;
+}
+
+.toggle-password:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.field small {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.field small.error {
+  color: #ef4444;
 }
 
 .btn {
@@ -349,7 +587,10 @@ form {
   font-family: inherit;
   text-decoration: none;
   text-align: center;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .btn.primary {
@@ -380,13 +621,22 @@ form {
 }
 
 .loading {
-  display: inline-block;
-  animation: pulse 1.5s infinite;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Divider */
@@ -453,6 +703,10 @@ form {
     font-size: 1.8rem;
   }
 
+  .field-group {
+    grid-template-columns: 1fr;
+  }
+
   .alert {
     min-width: 90%;
     max-width: 90%;
@@ -473,6 +727,7 @@ form {
   }
 
   .field input,
+  .field textarea,
   .btn {
     font-size: 0.95rem;
   }
