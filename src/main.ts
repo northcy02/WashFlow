@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import router from './router/index'
+import router from './Router/index'
 import 'animate.css'
 import '@fortawesome/fontawesome-free/css/all.css'
 

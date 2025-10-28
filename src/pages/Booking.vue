@@ -1,492 +1,260 @@
 <template>
   <div class="booking-page">
-    <!-- Navigator Component -->
     <Navigator />
 
-    <!-- Booking Content -->
-    <section class="booking-section">
+    <!-- Hero -->
+    <section class="hero">
       <div class="container">
-        <!-- Title -->
-        <div class="booking-header">
-          <h1 class="title-top">จองคิว</h1>
-          <h2 class="title-main">ล้างรถตอนนี้</h2>
-          <p class="subtitle">CYBERCAR ศูนย์มาตราฐานทำความสะอาดรถยนต์</p>
+        <h1>จองบริการล้างรถ</h1>
+        <p>เลือกบริการที่ต้องการ ง่าย รวดเร็ว</p>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="main">
+      <div class="container">
+        
+        <!-- Progress -->
+        <div class="progress">
+          <div class="step" :class="{ active: currentStep >= 1 }">
+            <span>1</span>
+            <label>เลือกรถ</label>
+          </div>
+          <div class="line" :class="{ active: currentStep >= 2 }"></div>
+          <div class="step" :class="{ active: currentStep >= 2 }">
+            <span>2</span>
+            <label>เลือกบริการ</label>
+          </div>
+          <div class="line" :class="{ active: currentStep >= 3 }"></div>
+          <div class="step" :class="{ active: currentStep >= 3 }">
+            <span>3</span>
+            <label>ยืนยัน</label>
+          </div>
         </div>
 
-        <!-- Vehicle Type Selection -->
-        <div class="selection-section">
-          <h3 class="section-title">เลือกประเภทรถของคุณเพื่อเข้ารับบริการ</h3>
+        <!-- Step 1: Vehicles -->
+        <div v-if="currentStep === 1" class="content">
+          <h2>เลือกประเภทรถ</h2>
+          <div class="grid">
+            <div 
+              v-for="vehicle in vehicles" 
+              :key="vehicle.id"
+              class="card"
+              :class="{ selected: selectedVehicle === vehicle.id }"
+              @click="selectedVehicle = vehicle.id"
+            >
+              <div class="icon" v-html="vehicle.icon"></div>
+              <h3>{{ vehicle.name }}</h3>
+              <p>{{ vehicle.desc }}</p>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" :disabled="!selectedVehicle" @click="currentStep = 2">
+              ถัดไป →
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Services -->
+        <div v-if="currentStep === 2" class="content">
+          <h2>เลือกบริการ</h2>
+          <div class="grid">
+            <div 
+              v-for="service in services" 
+              :key="service.id"
+              class="card"
+              :class="{ selected: selectedServices.includes(service.id) }"
+              @click="toggleService(service.id)"
+            >
+              <div class="badge" v-if="service.hot">HOT</div>
+              <div class="icon" v-html="service.icon"></div>
+              <h3>{{ service.name }}</h3>
+              <p class="price">฿{{ service.price }}</p>
+              <small>{{ service.time }}</small>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div v-if="selectedServices.length > 0" class="summary">
+            <div class="row">
+              <span>รวม {{ selectedServices.length }} บริการ</span>
+              <span>฿{{ subtotal }}</span>
+            </div>
+            <div v-if="discount > 0" class="row discount">
+              <span>ส่วนลด {{ discountPercent }}%</span>
+              <span>-฿{{ discount }}</span>
+            </div>
+            <div class="row total">
+              <strong>ยอดรวม</strong>
+              <strong>฿{{ total }}</strong>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn" @click="currentStep = 1">← ย้อนกลับ</button>
+            <button class="btn primary" :disabled="selectedServices.length === 0" @click="currentStep = 3">
+              ถัดไป →
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Confirm -->
+        <div v-if="currentStep === 3" class="content">
+          <h2>ยืนยันการจอง</h2>
           
-          <div class="vehicle-grid">
-            <div 
-              class="vehicle-card"
-              :class="{ active: selectedVehicle === 'sedan' }"
-              @click="selectVehicle('sedan')"
-            >
-              <div class="vehicle-icon">
-                <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10 40 L20 25 L35 25 L40 15 L60 15 L65 25 L80 25 L90 40 Z"/>
-                  <circle cx="25" cy="45" r="8"/>
-                  <circle cx="75" cy="45" r="8"/>
-                  <line x1="33" y1="45" x2="67" y2="45"/>
-                </svg>
-              </div>
-              <p>รถเก๋ง</p>
+          <div class="details">
+            <div class="detail-row">
+              <label>ประเภทรถ</label>
+              <span>{{ getVehicleName(selectedVehicle) }}</span>
             </div>
+            <div class="detail-row">
+              <label>บริการ</label>
+              <div class="tags">
+                <span v-for="id in selectedServices" :key="id" class="tag">
+                  {{ getServiceName(id) }}
+                </span>
+              </div>
+            </div>
+            <div class="detail-row">
+              <label>วันที่</label>
+              <span>{{ currentDate }}</span>
+            </div>
+            <div class="detail-row total">
+              <label>ยอดชำระ</label>
+              <strong>฿{{ total }}</strong>
+            </div>
+          </div>
 
-            <div 
-              class="vehicle-card"
-              :class="{ active: selectedVehicle === 'truck' }"
-              @click="selectVehicle('truck')"
-            >
-              <div class="vehicle-icon">
-                <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10 35 L20 20 L40 20 L40 15 L70 15 L75 25 L85 25 L90 35 Z"/>
-                  <rect x="40" y="25" width="25" height="15"/>
-                  <circle cx="25" cy="45" r="8"/>
-                  <circle cx="75" cy="45" r="8"/>
-                </svg>
-              </div>
-              <p>รถกระบะ</p>
+          <!-- Payment -->
+          <div class="payment">
+            <h3>วิธีชำระเงิน</h3>
+            <div class="payment-grid">
+              <label class="payment-option" :class="{ selected: paymentMethod === 'cash' }">
+                <input type="radio" v-model="paymentMethod" value="cash">
+                <span>💵 เงินสด</span>
+              </label>
+              <label class="payment-option" :class="{ selected: paymentMethod === 'card' }">
+                <input type="radio" v-model="paymentMethod" value="card">
+                <span>💳 บัตร</span>
+              </label>
+              <label class="payment-option" :class="{ selected: paymentMethod === 'qr' }">
+                <input type="radio" v-model="paymentMethod" value="qr">
+                <span>📱 QR</span>
+              </label>
             </div>
+          </div>
 
-            <div 
-              class="vehicle-card"
-              :class="{ active: selectedVehicle === 'sport' }"
-              @click="selectVehicle('sport')"
-            >
-              <div class="vehicle-icon">
-                <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M15 40 L25 25 L40 20 L60 20 L70 25 L85 40 Z"/>
-                  <path d="M30 25 L35 20 L55 20 L60 25"/>
-                  <circle cx="30" cy="45" r="8"/>
-                  <circle cx="70" cy="45" r="8"/>
-                </svg>
-              </div>
-              <p>รถสปอร์ต</p>
-            </div>
+          <!-- Terms -->
+          <label class="checkbox">
+            <input type="checkbox" v-model="acceptTerms">
+            <span>ยอมรับ <a href="#">เงื่อนไขการใช้บริการ</a></span>
+          </label>
 
-            <div 
-              class="vehicle-card"
-              :class="{ active: selectedVehicle === 'suv' }"
-              @click="selectVehicle('suv')"
+          <div class="actions">
+            <button class="btn" @click="currentStep = 2">← ย้อนกลับ</button>
+            <button 
+              class="btn primary" 
+              :disabled="!acceptTerms || !paymentMethod"
+              @click="confirmBooking"
             >
-              <div class="vehicle-icon">
-                <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10 35 L18 18 L38 18 L42 12 L62 12 L66 18 L82 18 L90 35 Z"/>
-                  <rect x="18" y="18" width="64" height="17"/>
-                  <circle cx="28" cy="45" r="8"/>
-                  <circle cx="72" cy="45" r="8"/>
-                </svg>
-              </div>
-              <p>รถตู้</p>
-            </div>
-
-            <div 
-              class="vehicle-card"
-              :class="{ active: selectedVehicle === 'motor' }"
-              @click="selectVehicle('motor')"
-            >
-              <div class="vehicle-icon">
-                <svg viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="30" cy="45" r="8"/>
-                  <circle cx="70" cy="45" r="8"/>
-                  <path d="M30 45 L40 30 L60 30 L70 45"/>
-                  <path d="M45 30 L50 20 L55 30"/>
-                  <line x1="50" y1="20" x2="50" y2="15"/>
-                </svg>
-              </div>
-              <p>มอเตอร์ไซค์</p>
-            </div>
+              ✓ ยืนยันการจอง
+            </button>
           </div>
         </div>
 
-        <!-- Service Selection -->
-        <div class="service-section">
-          <h3 class="section-title">เลือกบริการ</h3>
-          
-          <div class="service-grid">
-            <div 
-              class="service-card"
-              :class="{ active: selectedServices.includes('coating') }"
-              @click="toggleService('coating')"
-            >
-              <div class="service-icon">
-                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="15" y="20" width="50" height="40" rx="5"/>
-                  <path d="M25 30 L35 40 L55 30"/>
-                  <circle cx="30" cy="50" r="3"/>
-                  <circle cx="50" cy="50" r="3"/>
-                  <path d="M20 25 Q40 15 60 25" stroke-dasharray="3"/>
-                </svg>
-              </div>
-              <p>เคลือบแก้ว</p>
-              <span class="price">150.-</span>
-            </div>
-
-            <div 
-              class="service-card"
-              :class="{ active: selectedServices.includes('wash') }"
-              @click="toggleService('wash')"
-            >
-              <div class="service-icon">
-                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="15" y="25" width="50" height="35" rx="5"/>
-                  <path d="M25 35 L35 45 L55 35"/>
-                  <circle cx="30" cy="52" r="3"/>
-                  <circle cx="50" cy="52" r="3"/>
-                  <path d="M30 20 Q35 10 40 20 Q45 10 50 20" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <p>ล้างรถ</p>
-              <span class="price">200.-</span>
-            </div>
-
-            <div 
-              class="service-card"
-              :class="{ active: selectedServices.includes('vacuum') }"
-              @click="toggleService('vacuum')"
-            >
-              <div class="service-icon">
-                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="20" y="30" width="40" height="30" rx="3"/>
-                  <path d="M25 40 L40 50 L55 40"/>
-                  <circle cx="32" cy="52" r="2"/>
-                  <circle cx="48" cy="52" r="2"/>
-                  <path d="M30 25 L35 20 L40 25 L45 20 L50 25"/>
-                </svg>
-              </div>
-              <p>ดูดฝุ่น</p>
-              <span class="price">80.-</span>
-            </div>
-
-            <div 
-              class="service-card"
-              :class="{ active: selectedServices.includes('polish') }"
-              @click="toggleService('polish')"
-            >
-              <div class="service-icon">
-                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="15" y="25" width="50" height="35" rx="5"/>
-                  <path d="M25 35 L35 45 L55 35"/>
-                  <circle cx="30" cy="52" r="3"/>
-                  <circle cx="50" cy="52" r="3"/>
-                  <path d="M28 28 L32 24 L36 28 M44 28 L48 24 L52 28"/>
-                  <circle cx="40" cy="20" r="3" fill="currentColor"/>
-                </svg>
-              </div>
-              <p>ขัดสี</p>
-              <span class="price">1,000.-</span>
-            </div>
-
-            <div 
-              class="service-card"
-              :class="{ active: selectedServices.includes('interior') }"
-              @click="toggleService('interior')"
-            >
-              <div class="service-icon">
-                <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="20" y="25" width="40" height="35" rx="5"/>
-                  <rect x="28" y="32" width="24" height="20" rx="2"/>
-                  <line x1="40" y1="32" x2="40" y2="52"/>
-                  <circle cx="32" cy="55" r="2"/>
-                  <circle cx="48" cy="55" r="2"/>
-                </svg>
-              </div>
-              <p>ซักเบาะ</p>
-              <span class="price">2,000.-</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Summary Section -->
-        <div v-if="selectedVehicle || selectedServices.length > 0" class="summary-section">
-          <h3 class="summary-title">สรุปการจอง</h3>
-          <div class="summary-content">
-            <div v-if="selectedVehicle" class="summary-item">
-              <span class="label">ประเภทรถ:</span>
-              <span class="value">{{ getVehicleName(selectedVehicle) }}</span>
-            </div>
-            <div v-if="selectedServices.length > 0" class="summary-item">
-              <span class="label">บริการที่เลือก:</span>
-              <span class="value">{{ getServiceNames() }}</span>
-            </div>
-            <div class="summary-item total">
-              <span class="label">ราคารวม:</span>
-              <span class="value price-highlight">{{ calculateTotal() }} บาท</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Confirm Button -->
-        <div class="confirm-section">
-          <button 
-            class="btn-confirm"
-            :disabled="!selectedVehicle || selectedServices.length === 0"
-            @click="confirmBooking"
-          >
-            <span v-if="!selectedVehicle || selectedServices.length === 0">กรุณาเลือกรถและบริการ</span>
-            <span v-else>ยืนยันการจอง</span>
-          </button>
-        </div>
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Navigator from '../components/Navigator.vue';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
-
+const currentStep = ref(1);
 const selectedVehicle = ref('');
 const selectedServices = ref<string[]>([]);
+const paymentMethod = ref('');
+const acceptTerms = ref(false);
 
-const servicesPrices: Record<string, number> = {
-  coating: 150,
-  wash: 200,
-  vacuum: 80,
-  polish: 1000,
-  interior: 2000
-};
+const vehicles = [
+  { id: 'sedan', name: 'รถเก๋ง', desc: '4 ประตู', icon: '🚗' },
+  { id: 'truck', name: 'กระบะ', desc: 'Pick-up', icon: '🚙' },
+  { id: 'suv', name: 'SUV/รถตู้', desc: '7-9 ที่นั่ง', icon: '🚐' },
+  { id: 'motor', name: 'มอเตอร์ไซค์', desc: 'Bike', icon: '🏍️' }
+];
 
-const servicesNames: Record<string, string> = {
-  coating: 'เคลือบแก้ว',
-  wash: 'ล้างรถ',
-  vacuum: 'ดูดฝุ่น',
-  polish: 'ขัดสี',
-  interior: 'ซักเบาะ'
-};
+const services = [
+  { id: 'wash', name: 'ล้างรถ', price: 200, time: '30 นาที', hot: true, icon: '🚿' },
+  { id: 'coating', name: 'เคลือบแก้ว', price: 150, time: '15 นาที', icon: '✨' },
+  { id: 'polish', name: 'ขัดสี', price: 1000, time: '60 นาที', hot: true, icon: '💎' },
+  { id: 'vacuum', name: 'ดูดฝุ่น', price: 80, time: '20 นาที', icon: '🌪️' },
+  { id: 'interior', name: 'ซักเบาะ', price: 2000, time: '90 นาที', icon: '🧼' }
+];
 
-const vehicleNames: Record<string, string> = {
-  sedan: 'รถเก๋ง',
-  truck: 'รถกระบะ',
-  sport: 'รถสปอร์ต',
-  suv: 'รถตู้',
-  motor: 'มอเตอร์ไซค์'
-};
+const subtotal = computed(() => 
+  selectedServices.value.reduce((sum, id) => 
+    sum + (services.find(s => s.id === id)?.price || 0), 0
+  )
+);
 
-// Select Vehicle with SweetAlert notification
-const selectVehicle = (vehicle: string) => {
-  selectedVehicle.value = vehicle;
-  
-  Swal.fire({
-    title: 'เลือกประเภทรถ',
-    text: `คุณเลือก ${getVehicleName(vehicle)}`,
-    icon: 'success',
-    iconColor: '#10b981',
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 1500,
-    timerProgressBar: true,
-    background: 'rgba(30, 30, 30, 0.95)',
-    color: '#ffffff',
-    customClass: {
-      popup: 'custom-toast'
-    }
-  });
-};
+const discountPercent = computed(() => 
+  selectedServices.value.length >= 3 ? 20 : selectedServices.value.length >= 2 ? 10 : 0
+);
 
-// Toggle Service with SweetAlert notification
-const toggleService = (service: string) => {
-  const index = selectedServices.value.indexOf(service);
-  
+const discount = computed(() => 
+  Math.floor(subtotal.value * (discountPercent.value / 100))
+);
+
+const total = computed(() => subtotal.value - discount.value);
+
+const currentDate = computed(() => 
+  new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+);
+
+const toggleService = (id: string) => {
+  const index = selectedServices.value.indexOf(id);
   if (index > -1) {
     selectedServices.value.splice(index, 1);
-    
-    Swal.fire({
-      title: 'ยกเลิกบริการ',
-      text: `ลบ ${servicesNames[service]} แล้ว`,
-      icon: 'info',
-      iconColor: '#f59e0b',
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 1500,
-      timerProgressBar: true,
-      background: 'rgba(30, 30, 30, 0.95)',
-      color: '#ffffff',
-      customClass: {
-        popup: 'custom-toast'
-      }
-    });
   } else {
-    selectedServices.value.push(service);
-    
-    Swal.fire({
-      title: 'เพิ่มบริการ',
-      text: `เลือก ${servicesNames[service]} (${servicesPrices[service]} บาท)`,
-      icon: 'success',
-      iconColor: '#10b981',
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 1500,
-      timerProgressBar: true,
-      background: 'rgba(30, 30, 30, 0.95)',
-      color: '#ffffff',
-      customClass: {
-        popup: 'custom-toast'
-      }
-    });
+    selectedServices.value.push(id);
   }
 };
 
-const getVehicleName = (type: string) => {
-  return vehicleNames[type] || type;
-};
+const getVehicleName = (id: string) => vehicles.find(v => v.id === id)?.name || '';
+const getServiceName = (id: string) => services.find(s => s.id === id)?.name || '';
 
-const getServiceNames = () => {
-  return selectedServices.value.map(s => servicesNames[s]).join(', ');
-};
-
-const calculateTotal = () => {
-  return selectedServices.value.reduce((total, service) => {
-    return total + (servicesPrices[service] || 0);
-  }, 0);
-};
-
-// Confirm Booking with SweetAlert
 const confirmBooking = () => {
-  if (!selectedVehicle.value || selectedServices.value.length === 0) {
-    Swal.fire({
-      title: 'ข้อมูลไม่ครบ!',
-      text: 'กรุณาเลือกประเภทรถและบริการ',
-      icon: 'error',
-      iconColor: '#dc2626',
-      confirmButtonColor: '#dc2626',
-      confirmButtonText: 'ตกลง',
-      background: 'rgba(30, 30, 30, 0.98)',
-      color: '#ffffff',
-      customClass: {
-        popup: 'custom-swal-popup',
-        title: 'custom-swal-title',
-        confirmButton: 'custom-swal-confirm'
-      },
-      buttonsStyling: false
-    });
-    return;
-  }
-
-  const total = calculateTotal();
-  const servicesList = getServiceNames();
-  const vehicleName = getVehicleName(selectedVehicle.value);
-
-  // Show confirmation dialog
-  Swal.fire({
-    title: 'ยืนยันการจอง',
-    html: `
-      <div style="text-align: left; padding: 1rem;">
-        <p style="margin-bottom: 0.8rem;"><strong>ประเภทรถ:</strong> ${vehicleName}</p>
-        <p style="margin-bottom: 0.8rem;"><strong>บริการ:</strong> ${servicesList}</p>
-        <p style="margin-bottom: 0.8rem; font-size: 1.3rem; color: #dc2626;"><strong>ราคารวม:</strong> ${total} บาท</p>
-      </div>
-    `,
-    icon: 'question',
-    iconColor: '#dc2626',
-    showCancelButton: true,
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#6b7280',
-    confirmButtonText: '<i class="fas fa-check"></i> ยืนยันการจอง',
-    cancelButtonText: '<i class="fas fa-times"></i> ยกเลิก',
-    reverseButtons: true,
-    background: 'rgba(30, 30, 30, 0.98)',
-    color: '#ffffff',
-    customClass: {
-      popup: 'custom-swal-popup',
-      title: 'custom-swal-title',
-      htmlContainer: 'custom-swal-text',
-      confirmButton: 'custom-swal-confirm',
-      cancelButton: 'custom-swal-cancel'
-    },
-    buttonsStyling: false,
-    showClass: {
-      popup: 'animate__animated animate__zoomIn animate__faster'
-    },
-    hideClass: {
-      popup: 'animate__animated animate__zoomOut animate__faster'
-    }
-  }).then((result) => {
-    if (result.isConfirmed) {
-      saveBooking(vehicleName, servicesList, total);
-    }
-  });
-};
-
-// Save booking to localStorage and show success
-const saveBooking = (vehicleName: string, servicesList: string, total: number) => {
-  // Get current date
-  const currentDate = new Date();
-  const dateStr = currentDate.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  // Create booking object
-  const newBooking = {
+  const booking = {
     id: Date.now(),
-    date: dateStr,
-    carType: vehicleName,
-    services: selectedServices.value.map(s => servicesNames[s]),
-    price: total,
+    date: currentDate.value,
+    carType: getVehicleName(selectedVehicle.value),
+    services: selectedServices.value.map(id => getServiceName(id)),
+    total: total.value,
+    paymentMethod: paymentMethod.value,
     status: 'pending',
-    statusText: 'รอดำเนินการ',
-    createdAt: currentDate.toISOString()
+    createdAt: new Date().toISOString()
   };
 
-  // Get existing bookings from localStorage
-  const existingBookings = localStorage.getItem('bookingHistory');
-  let bookings = existingBookings ? JSON.parse(existingBookings) : [];
-
-  // Add new booking
-  bookings.unshift(newBooking);
-
-  // Save to localStorage
+  const bookings = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
+  bookings.unshift(booking);
   localStorage.setItem('bookingHistory', JSON.stringify(bookings));
 
-  // Show success message with animation
   Swal.fire({
-    title: 'จองสำเร็จ!',
+    title: 'จองสำเร็จ! ✓',
     html: `
-      <div style="text-align: center; padding: 1rem;">
-        <p style="font-size: 1.1rem; margin-bottom: 1rem;">การจองของคุณได้รับการบันทึกแล้ว</p>
-        <div style="background: rgba(220, 38, 38, 0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
-          <p style="margin-bottom: 0.5rem;"><strong>รหัสการจอง:</strong> #${newBooking.id}</p>
-          <p style="margin-bottom: 0.5rem;"><strong>วันที่:</strong> ${dateStr}</p>
-          <p style="color: #10b981;"><strong>สถานะ:</strong> รอดำเนินการ</p>
-        </div>
+      <div style="padding: 1rem;">
+        <p style="font-size: 1.2rem; margin-bottom: 1rem;">รหัส: #${booking.id}</p>
+        <p style="font-size: 2rem; color: #dc2626; font-weight: 900;">฿${total.value}</p>
       </div>
     `,
     icon: 'success',
-    iconColor: '#10b981',
-    confirmButtonColor: '#dc2626',
-    confirmButtonText: '<i class="fas fa-history"></i> ดูประวัติการจอง',
-    background: 'rgba(30, 30, 30, 0.98)',
-    color: '#ffffff',
-    customClass: {
-      popup: 'custom-swal-popup',
-      title: 'custom-swal-title',
-      htmlContainer: 'custom-swal-text',
-      confirmButton: 'custom-swal-confirm'
-    },
-    buttonsStyling: false,
-    showClass: {
-      popup: 'animate__animated animate__bounceIn'
-    },
-    hideClass: {
-      popup: 'animate__animated animate__fadeOut'
-    }
+    confirmButtonText: 'ดูประวัติ',
+    confirmButtonColor: '#dc2626'
   }).then(() => {
-    // Reset form
-    selectedVehicle.value = '';
-    selectedServices.value = [];
-    
-    // Navigate to history page
     router.push('/history');
   });
 };
@@ -502,407 +270,410 @@ const saveBooking = (vehicleName: string, servicesList: string, total: number) =
 .booking-page {
   min-height: 100vh;
   background: #000;
-  color: white;
-  font-family: 'Kanit', 'Sarabun', sans-serif;
+  color: #fff;
+  font-family: 'Kanit', sans-serif;
 }
 
-/* Booking Section */
-.booking-section {
-  margin-top: 100px;
-  padding: 3rem 2rem 5rem;
-  min-height: calc(100vh - 100px);
-  background: linear-gradient(to bottom, #000 0%, #1a1a1a 100%);
+/* Hero */
+.hero {
+  margin-top: 80px;
+  padding: 4rem 2rem 2rem;
+  text-align: center;
+  background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
+}
+
+.hero h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #dc2626;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Main */
+.main {
+  padding: 2rem;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
-/* Header */
-.booking-header {
-  text-align: center;
+/* Progress */
+.progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
   margin-bottom: 3rem;
-}
-
-.title-top {
-  font-size: 3rem;
-  font-weight: 400;
-  margin-bottom: 0;
-  color: white;
-}
-
-.title-main {
-  font-size: 4rem;
-  font-weight: 900;
-  color: #dc2626;
-  margin: -0.5rem 0 1rem;
-  text-shadow: 0 0 40px rgba(220, 38, 38, 0.6);
-}
-
-.subtitle {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  letter-spacing: 1px;
-}
-
-/* Selection Section */
-.selection-section, .service-section {
-  margin-bottom: 3rem;
-}
-
-.section-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 2rem;
-  color: white;
-  letter-spacing: 1px;
-}
-
-/* Vehicle Grid */
-.vehicle-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.vehicle-card {
-  background: rgba(30, 30, 30, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
   padding: 1.5rem;
-  text-align: center;
-  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.3;
   transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
 }
 
-.vehicle-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.2), transparent);
-  transition: left 0.5s;
+.step.active {
+  opacity: 1;
 }
 
-.vehicle-card:hover::before {
-  left: 100%;
+.step span {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transition: all 0.3s;
 }
 
-.vehicle-card:hover {
-  background: rgba(50, 50, 50, 0.9);
-  border-color: rgba(220, 38, 38, 0.5);
-  transform: translateY(-5px);
-}
-
-.vehicle-card.active {
-  background: rgba(220, 38, 38, 0.2);
+.step.active span {
+  background: #dc2626;
   border-color: #dc2626;
-  box-shadow: 0 0 30px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
 }
 
-.vehicle-icon {
-  width: 80px;
-  height: 60px;
-  margin: 0 auto 1rem;
-  color: white;
+.step label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.vehicle-card.active .vehicle-icon {
-  color: #dc2626;
-}
-
-.vehicle-card p {
-  font-size: 1rem;
+.step.active label {
+  color: #fff;
   font-weight: 600;
 }
 
-/* Service Grid */
-.service-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1.5rem;
+.line {
+  width: 60px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s;
 }
 
-.service-card {
-  background: rgba(30, 30, 30, 0.8);
+.line.active {
+  background: #dc2626;
+}
+
+/* Content */
+.content {
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.content h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  position: relative;
+  padding: 2rem 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
   border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  padding: 1.5rem 1rem;
+  border-radius: 12px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
 }
 
-.service-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.service-card:hover::before {
-  left: 100%;
-}
-
-.service-card:hover {
-  background: rgba(50, 50, 50, 0.9);
+.card:hover {
+  background: rgba(255, 255, 255, 0.05);
   border-color: rgba(220, 38, 38, 0.5);
-  transform: translateY(-5px);
+  transform: translateY(-4px);
 }
 
-.service-card.active {
-  background: rgba(220, 38, 38, 0.2);
+.card.selected {
+  background: rgba(220, 38, 38, 0.1);
   border-color: #dc2626;
-  box-shadow: 0 0 30px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
 }
 
-.service-icon {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 1rem;
-  color: white;
+.card .badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #dc2626;
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
-.service-card.active .service-icon {
-  color: #dc2626;
+.card .icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
 }
 
-.service-card p {
-  font-size: 1rem;
+.card h3 {
+  font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
-.price {
-  display: block;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #dc2626;
+.card p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-/* Summary Section */
-.summary-section {
-  background: rgba(220, 38, 38, 0.1);
-  border: 2px solid rgba(220, 38, 38, 0.3);
-  border-radius: 15px;
-  padding: 2rem;
+.card .price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #dc2626;
+  margin: 0.5rem 0;
+}
+
+.card small {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Summary */
+.summary {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(220, 38, 38, 0.2);
+  border-radius: 12px;
   margin-bottom: 2rem;
 }
 
-.summary-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #dc2626;
-}
-
-.summary-content {
+.row {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.summary-item {
+.row:last-child {
+  border-bottom: none;
+}
+
+.row.discount {
+  color: #10b981;
+}
+
+.row.total {
+  font-size: 1.2rem;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(220, 38, 38, 0.3);
+}
+
+/* Details */
+.details {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.8rem 1rem;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.summary-item.total {
-  background: rgba(220, 38, 38, 0.2);
-  border: 1px solid rgba(220, 38, 38, 0.5);
-  padding: 1rem 1.5rem;
-  margin-top: 0.5rem;
+.detail-row:last-child {
+  border-bottom: none;
 }
 
-.summary-item .label {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.8);
+.detail-row label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
 }
 
-.summary-item .value {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: white;
-}
-
-.summary-item.total .label {
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-
-.summary-item.total .value {
-  font-size: 1.5rem;
-  font-weight: 900;
-}
-
-.price-highlight {
-  color: #dc2626;
-  text-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
-}
-
-/* Confirm Button */
-.confirm-section {
-  text-align: center;
-  margin-top: 3rem;
-}
-
-.btn-confirm {
-  background: #dc2626;
-  color: white;
-  border: 3px solid #dc2626;
-  padding: 1.2rem 5rem;
-  border-radius: 10px;
+.detail-row.total {
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(220, 38, 38, 0.3);
   font-size: 1.3rem;
-  font-weight: 900;
+}
+
+.detail-row.total strong {
+  color: #dc2626;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.tag {
+  padding: 0.25rem 0.75rem;
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #dc2626;
+}
+
+/* Payment */
+.payment {
+  margin-bottom: 2rem;
+}
+
+.payment h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.payment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.payment-option {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  text-align: center;
   cursor: pointer;
   transition: all 0.3s;
-  letter-spacing: 2px;
-  text-transform: uppercase;
 }
 
-.btn-confirm:hover:not(:disabled) {
-  background: transparent;
+.payment-option input {
+  display: none;
+}
+
+.payment-option:hover {
+  border-color: rgba(220, 38, 38, 0.5);
+}
+
+.payment-option.selected {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: #dc2626;
+}
+
+.payment-option span {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Checkbox */
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 20px;
+  height: 20px;
+  accent-color: #dc2626;
+}
+
+.checkbox a {
   color: #dc2626;
-  transform: scale(1.05);
-  box-shadow: 0 10px 40px rgba(220, 38, 38, 0.5);
+  text-decoration: underline;
 }
 
-.btn-confirm:disabled {
-  opacity: 0.4;
+/* Actions */
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn.primary {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.3;
   cursor: not-allowed;
-  background: rgba(100, 100, 100, 0.5);
-  border-color: rgba(100, 100, 100, 0.5);
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .vehicle-grid, .service-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .title-main {
-    font-size: 3rem;
-  }
-}
-
 @media (max-width: 768px) {
-  .vehicle-grid, .service-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .title-top {
+  .hero h1 {
     font-size: 2rem;
   }
   
-  .title-main {
-    font-size: 2.5rem;
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
   
-  .btn-confirm {
-    padding: 1rem 3rem;
-    font-size: 1.1rem;
-  }
-
-  .summary-item {
-    flex-direction: column;
-    gap: 0.5rem;
-    text-align: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .vehicle-grid, .service-grid {
+  .payment-grid {
     grid-template-columns: 1fr;
   }
-}
-</style>
-
-<!-- SweetAlert2 Custom Styles -->
-<style>
-/* Toast Notification */
-.custom-toast {
-  border-radius: 10px !important;
-  border: 1px solid rgba(220, 38, 38, 0.3) !important;
-  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
-}
-
-/* Custom SweetAlert2 Styles */
-.custom-swal-popup {
-  border-radius: 20px !important;
-  border: 2px solid rgba(220, 38, 38, 0.3) !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
-  padding: 2rem !important;
-}
-
-.custom-swal-title {
-  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
-  font-size: 2rem !important;
-  font-weight: 700 !important;
-  color: #ffffff !important;
-  margin-bottom: 1rem !important;
-}
-
-.custom-swal-text {
-  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
-  font-size: 1.1rem !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.custom-swal-confirm,
-.custom-swal-cancel {
-  font-family: 'Rajdhani', 'Sarabun', sans-serif !important;
-  font-size: 1rem !important;
-  font-weight: 700 !important;
-  padding: 0.9rem 2rem !important;
-  border-radius: 8px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1px !important;
-  transition: all 0.3s !important;
-  border: 2px solid !important;
-  min-width: 140px !important;
-}
-
-.custom-swal-confirm {
-  background: #dc2626 !important;
-  color: white !important;
-  border-color: #dc2626 !important;
-}
-
-.custom-swal-confirm:hover {
-  background: #b91c1c !important;
-  border-color: #b91c1c !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4) !important;
-}
-
-.custom-swal-cancel {
-  background: transparent !important;
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-}
-
-.custom-swal-cancel:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: white !important;
-  transform: translateY(-2px) !important;
+  
+  .progress {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .line {
+    width: 30px;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
 }
 </style>
