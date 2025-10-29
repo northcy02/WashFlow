@@ -54,10 +54,6 @@
           <router-link to="/register" class="btn secondary">
             สมัครสมาชิก
           </router-link>
-
-          <div class="links">
-            <a href="#">ลืมรหัสผ่าน?</a>
-          </div>
         </div>
 
         <!-- Brand -->
@@ -116,13 +112,34 @@ const handleLogin = async () => {
   isLoading.value = true;
 
   try {
+    console.log('📤 Logging in...');
+    
     const res = await axios.post('http://localhost:3000/api/auth/login', {
       username: formData.username,
       password: formData.password
     });
 
-    localStorage.setItem('user', JSON.stringify(res.data.user));
+    console.log('📥 Login response:', res.data);
+
+    // ✅ บันทึกข้อมูลครบถ้วน
+    const userData = {
+      id: res.data.customer.id,
+      username: res.data.customer.username,
+      firstName: res.data.customer.firstName,
+      lastName: res.data.customer.lastName,
+      fullName: res.data.customer.fullName,
+      phone: res.data.customer.phone || '',
+      address: res.data.customer.address || '',
+      memberSince: res.data.customer.memberSince || new Date().toISOString()
+    };
+
+    console.log('💾 Saving user data:', userData);
+
+    localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('isLoggedIn', 'true');
+
+    // แจ้งเตือน components อื่นๆ
+    window.dispatchEvent(new CustomEvent('loginStatusChanged'));
 
     showAlert('เข้าสู่ระบบสำเร็จ!', 'success');
 
@@ -131,7 +148,7 @@ const handleLogin = async () => {
     }, 1500);
 
   } catch (err: any) {
-    console.error('Login error:', err);
+    console.error('❌ Login error:', err);
     
     if (err.response) {
       showAlert(err.response.data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
@@ -389,25 +406,6 @@ form {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Links */
-.links {
-  margin-top: 1.5rem;
-  text-align: center;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.links a {
-  color: rgba(255, 255, 255, 0.6);
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.3s;
-}
-
-.links a:hover {
-  color: #dc2626;
-}
-
 /* Brand */
 .brand {
   margin-top: 2rem;
@@ -449,10 +447,6 @@ form {
     min-width: 90%;
     max-width: 90%;
   }
-
-  .brand h2 {
-    font-size: 1.3rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -462,11 +456,6 @@ form {
 
   .card h1 {
     font-size: 1.5rem;
-  }
-
-  .field input,
-  .btn {
-    font-size: 0.95rem;
   }
 }
 </style>

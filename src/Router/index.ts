@@ -6,6 +6,7 @@ import Booking from '../pages/Booking.vue'
 import Services from '../pages/Services.vue'
 import CarTypes from '../pages/CarTypes.vue'
 import History from '../pages/History.vue'
+import Profile from '../pages/Profile.vue'
 
 const routes = [
   {
@@ -42,6 +43,11 @@ const routes = [
     path: '/history',
     name: 'History',
     component: History
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile
   }
 ]
 
