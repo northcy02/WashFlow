@@ -1,3 +1,4 @@
+<!-- src/components/navigator.vue -->
 <template>
   <header class="header" :class="{ 'scrolled': isScrolled, 'menu-open': isMobileMenuOpen }">
     <div class="container">

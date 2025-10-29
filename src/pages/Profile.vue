@@ -1,3 +1,4 @@
+<!-- src/pages/profile.vue -->
 <template>
   <div class="profile-page">
     <Navigator />

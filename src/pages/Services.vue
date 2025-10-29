@@ -1,3 +1,4 @@
+<!-- src/pages/services.vue -->
 <template>
   <div class="services-page">
     <!-- Navigator Component -->

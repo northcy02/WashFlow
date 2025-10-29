@@ -1,3 +1,4 @@
+<!-- src/pages/login.vue -->
 <template>
   <div class="login-page">
     <Navigator />

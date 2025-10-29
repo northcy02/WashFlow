@@ -1,3 +1,4 @@
+<!-- src/pages/history.vue -->
 <template>
   <div class="history-page">
     <Navigator />

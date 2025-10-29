@@ -1,3 +1,4 @@
+<!-- src/pages/register.vue -->
 <template>
   <div class="register-page">
     <Navigator />

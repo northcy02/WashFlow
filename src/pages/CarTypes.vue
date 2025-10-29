@@ -1,3 +1,4 @@
+<!-- src/pages/cartypes.vue -->
 <template>
   <div class="car-types-page">
     <Navigator />

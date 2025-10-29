@@ -1,3 +1,4 @@
+<!-- src/pages/index.vue -->
 <template>
   <div class="home-page">
     <h1>WASHFLOW - หน้าแรก</h1>

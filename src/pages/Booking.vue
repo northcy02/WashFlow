@@ -1,3 +1,4 @@
+<!-- src/pages/booking.vue -->
 <template>
   <div class="booking-page">
     <Navigator />

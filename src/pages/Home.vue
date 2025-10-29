@@ -1,3 +1,4 @@
+<!-- src/pages/home.vue -->
 <template>
   <div class="home-page">
     <!-- Navigator Component -->
