@@ -15,111 +15,70 @@
       <div class="container">
         
         <!-- Progress Stepper -->
-        <div class="progress">
-          <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-            <span>{{ currentStep > 1 ? '✓' : '1' }}</span>
-            <label>เลือกรถ</label>
-          </div>
-          <div class="line" :class="{ active: currentStep >= 2 }"></div>
-          <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-            <span>{{ currentStep > 2 ? '✓' : '2' }}</span>
-            <label>เลือกบริการ</label>
-          </div>
-          <div class="line" :class="{ active: currentStep >= 3 }"></div>
-          <div class="step" :class="{ active: currentStep >= 3 }">
-            <span>3</span>
-            <label>ยืนยัน</label>
-          </div>
+<div class="progress">
+  <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+    <span>{{ currentStep > 1 ? '✓' : '1' }}</span>
+    <label>เลือกรถ</label>
+  </div>
+  <div class="line" :class="{ active: currentStep >= 2 }"></div>
+  <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+    <span>{{ currentStep > 2 ? '✓' : '2' }}</span>
+    <label>เลือกบริการ</label>
+  </div>
+  <div class="line" :class="{ active: currentStep >= 3 }"></div>
+  <div class="step" :class="{ active: currentStep >= 3 }">
+    <span>3</span>
+    <label>ยืนยัน</label>
+  </div>
+</div>
+
+<!-- ✅ Step 1: เลือกรถ -->
+<div v-if="currentStep === 1" class="content">
+  <h2>🚗 เลือกประเภทรถของคุณ</h2>
+  
+  <div class="grid">
+    <div 
+      v-for="vehicle in carTypes" 
+      :key="vehicle.id"
+      class="card vehicle-card"
+      :class="{ selected: selectedVehicle === vehicle.id }"
+      @click="selectVehicle(vehicle.id)"
+    >
+      <div class="car-image">
+        <div class="flex justify-center items-center h-[90px] w-full">
+          <img 
+            :src="vehicle.image" 
+            :alt="vehicle.name"
+            class="h-[70px] w-auto object-contain"
+          />
         </div>
+      </div>
+      <div class="size-badge">{{ vehicle.size }}</div>
+      <h3>{{ vehicle.name }}</h3>
+      <p>{{ vehicle.desc }}</p>
+      
+      <div class="price-badge">
+        <span class="base-price">฿{{ vehicle.price.toLocaleString() }}</span>
+        <span class="price-label">ราคาพื้นฐาน</span>
+      </div>
+      
+      <div v-if="selectedVehicle === vehicle.id" class="checkmark">✓</div>
+    </div>
+  </div>
 
-        <!-- Step 1: Vehicles + Optional Plate -->
-        <div v-if="currentStep === 1" class="content">
-          <h2>🚙 เลือกประเภทรถของคุณ</h2>
-          
-          <div class="grid">
-            <div 
-              v-for="vehicle in carTypes" 
-              :key="vehicle.id"
-              class="card"
-              :class="{ selected: selectedVehicle === vehicle.id }"
-              @click="selectedVehicle = vehicle.id"
-            >
-              <div class="car-image">
-                  <!-- ส่วนไอคอน -->
-                  <div class="flex justify-center items-center h-[90px] w-full">
-                    <img 
-                      :src="vehicle.image" 
-                      :alt="vehicle.name"
-                      class="h-[70px] w-auto object-contain"
-                    />
-                  </div>
-              </div>
-              <div class="size-badge">{{ vehicle.size }}</div>
-              <h3>{{ vehicle.name }}</h3>
-              <p>{{ vehicle.desc }}</p>
-              <div v-if="selectedVehicle === vehicle.id" class="checkmark">✓</div>
-            </div>
-          </div>
-        
+  <!-- ✅ ปุ่มถัดไป Step 1 -->
+  <div class="actions">
+    <button 
+      class="btn primary" 
+      :disabled="!selectedVehicle"
+      @click="goToStep2"
+    >
+      ถัดไป: เลือกบริการ →
+    </button>
+  </div>
+</div>
 
-
-          <!-- Optional: Vehicle Plate -->
-          <div class="vehicle-details" v-if="selectedVehicle">
-            <h3>ข้อมูลรถ (ไม่บังคับ)</h3>
-            <div class="form-row">
-              <div class="form-field">
-                <label>🔖 ทะเบียนรถ</label>
-                <input 
-                  v-model="vehiclePlate" 
-                  type="text" 
-                  placeholder="เช่น กข-1234, ABC-123 หรือ 1กก-2345"
-                  class="input-field plate-input"
-                  @input="formatPlate"
-                  maxlength="15"
-                >
-                <small>สามารถกรอกภาษาไทย อังกฤษ หรือตัวเลข (ไม่บังคับ)</small>
-              </div>
-              <div class="form-field">
-                <label>🎨 สีรถ</label>
-                <select v-model="vehicleColor" class="input-field">
-                  <option value="">เลือกสี (ไม่บังคับ)</option>
-                  <option value="ขาว">ขาว</option>
-                  <option value="ดำ">ดำ</option>
-                  <option value="เทา">เทา</option>
-                  <option value="เงิน">เงิน</option>
-                  <option value="แดง">แดง</option>
-                  <option value="น้ำเงิน">น้ำเงิน</option>
-                  <option value="อื่นๆ">อื่นๆ</option>
-                </select>
-              </div>
-            </div>
-            
-            <!-- แสดงข้อมูลราคาเริ่มต้น -->
-            <div class="vehicle-info-card">
-              <div class="info-item">
-                <span class="info-label">ประเภทรถ:</span>
-                <span class="info-value">{{ getVehicleName(selectedVehicle) }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">ราคาพื้นฐาน:</span>
-                <span class="info-value price">฿{{ getVehicleBasePrice(selectedVehicle).toLocaleString() }}</span>
-              </div>
-              <div class="info-note">
-                💡 ราคาจริงจะคำนวณจากราคาพื้นฐาน + ค่าบริการที่เลือก
-              </div>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button 
-              class="btn primary" 
-              :disabled="!selectedVehicle" 
-              @click="goToStep2"
-            >
-              ถัดไป: เลือกบริการ →
-            </button>
-          </div>
-        </div>
+<!-- Step 2: Services + Date/Time -->
 
         <!-- Step 2: Services + Date/Time -->
         <div v-if="currentStep === 2" class="content">
@@ -460,13 +419,13 @@ const vehiclePlate = ref('');
 const vehicleColor = ref('');
 const isLoading = ref(false);
 
-// ✅ Data
 const carTypes = [
   { 
     id: 'sedan', 
     name: 'รถเก๋ง', 
     desc: 'Sedan', 
     size: 'M',
+    price: 300,  // ✅ เพิ่ม
     image: '/icons/sedan.svg'
   },
   { 
@@ -474,6 +433,7 @@ const carTypes = [
     name: 'รถกระบะ', 
     desc: 'Pickup', 
     size: 'L',
+    price: 400,  // ✅ เพิ่ม
     image: '/icons/pickup.svg'
   },
   { 
@@ -481,6 +441,7 @@ const carTypes = [
     name: 'รถสปอร์ต', 
     desc: 'Sports', 
     size: 'M',
+    price: 500,  // ✅ เพิ่ม
     image: '/icons/sports.svg'
   },
   { 
@@ -488,6 +449,7 @@ const carTypes = [
     name: 'รถตู้', 
     desc: 'Van', 
     size: 'XL',
+    price: 600,  // ✅ เพิ่ม
     image: '/icons/van.svg'
   },
   { 
@@ -495,10 +457,10 @@ const carTypes = [
     name: 'มอเตอร์ไซค์', 
     desc: 'Bike', 
     size: 'S',
+    price: 150,  // ✅ เพิ่ม
     image: '/icons/motorcycle.svg'
   }
 ];
-
 // บริการเสริม (ไม่รวมราคาพื้นฐานของรถ)
 const services = [
   { 
@@ -608,11 +570,10 @@ const canConfirm = computed(() =>
   acceptTerms.value && paymentMethod.value && !isLoading.value
 );
 
-// ✅ Methods
 const selectVehicle = (id: string) => {
   selectedVehicle.value = id;
+  console.log('✅ Selected Vehicle:', id, 'Price:', getVehicleBasePrice(id));
 };
-
 const toggleService = (id: string) => {
   const index = selectedServices.value.indexOf(id);
   if (index > -1) {
@@ -837,7 +798,22 @@ const confirmBooking = async () => {
   padding: 0;
   box-sizing: border-box;
 }
+/* Vehicle Card Specific */
+.vehicle-card {
+  position: relative;
+}
 
+.vehicle-card .car-image {
+  transition: transform 0.3s;
+}
+
+.vehicle-card:hover .car-image {
+  transform: scale(1.05);
+}
+
+.vehicle-card.selected .car-image {
+  transform: scale(1.08);
+}
 .booking-page {
   min-height: 100vh;
   background: #000;
@@ -1619,6 +1595,7 @@ const confirmBooking = async () => {
   border-radius: 8px;
   margin-bottom: 0.5rem;
 }
+
 
 .divider-small {
   height: 1px;
