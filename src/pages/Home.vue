@@ -10,8 +10,13 @@
       <section class="welcome-hero">
         <div class="container">
           <div class="welcome-content">
+<<<<<<< HEAD
             <h1>Welcome, <span class="user-name">{{ userName }}</span>! </h1>
             <p class="welcome-subtitle">ยินดีต้อนรับกลับสู่ระบบจองล้างรรถ CYBERCAR</p>
+=======
+            <h1>สวัสดี, <span class="user-name">{{ userName }}</span>! 👋</h1>
+            <p class="welcome-subtitle">ยินดีต้อนรับกลับสู่ระบบจองล้างรถ CYBERCAR</p>
+>>>>>>> 01c566acc9c94c31becbe28a4325d41011c5ccd5
           </div>
           
           <!-- Quick Stats -->
