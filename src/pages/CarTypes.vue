@@ -22,12 +22,16 @@
             </div>
             <h3>{{ car.name }}</h3>
             <p>{{ car.desc }}</p>
+            <div class="price-badge">
+              <span class="price">฿{{ car.basePrice.toLocaleString() }}</span>
+              <span class="price-label">เริ่มต้น</span>
+            </div>
             <span class="badge">{{ car.size }}</span>
           </div>
         </div>
 
         <div class="info">
-          <p>💡 ราคาบริการแตกต่างตามประเภทรถ</p>
+          <p>💡 ราคาบริการแตกต่างตามประเภทรถและแพ็กเกจที่เลือก</p>
         </div>
       </div>
     </section>
@@ -47,6 +51,7 @@ const carTypes = [
     name: 'รถเก๋ง', 
     desc: 'Sedan', 
     size: 'M',
+    basePrice: 250,
     image: '/icons/sedan.svg'
   },
   { 
@@ -54,6 +59,7 @@ const carTypes = [
     name: 'รถกระบะ', 
     desc: 'Pickup', 
     size: 'L',
+    basePrice: 300,
     image: '/icons/pickup.svg'
   },
   { 
@@ -61,6 +67,7 @@ const carTypes = [
     name: 'รถสปอร์ต', 
     desc: 'Sports', 
     size: 'M',
+    basePrice: 500,
     image: '/icons/sports.svg'
   },
   { 
@@ -68,6 +75,7 @@ const carTypes = [
     name: 'รถตู้', 
     desc: 'Van', 
     size: 'XL',
+    basePrice: 400,
     image: '/icons/van.svg'
   },
   { 
@@ -75,6 +83,7 @@ const carTypes = [
     name: 'มอเตอร์ไซค์', 
     desc: 'Bike', 
     size: 'S',
+    basePrice: 150,
     image: '/icons/motorcycle.svg'
   }
 ];
@@ -84,7 +93,12 @@ const selectCarType = (type: string) => {
   
   Swal.fire({
     title: `เลือก${car?.name}`,
-    text: 'ต้องการไปหน้าจองบริการ?',
+    html: `
+      <div style="text-align: left; padding: 1rem;">
+        <p style="margin-bottom: 0.5rem;">ราคาเริ่มต้น: <strong style="color: #dc2626;">฿${car?.basePrice.toLocaleString()}</strong></p>
+        <p style="color: #6b7280; font-size: 0.9rem;">*ราคาจริงขึ้นอยู่กับแพ็กเกจที่เลือก</p>
+      </div>
+    `,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'ไปจองเลย',
@@ -95,7 +109,10 @@ const selectCarType = (type: string) => {
     if (result.isConfirmed) {
       router.push({
         path: '/booking',
-        query: { carType: type }
+        query: { 
+          carType: type,
+          basePrice: car?.basePrice
+        }
       });
     }
   });
@@ -211,6 +228,38 @@ const selectCarType = (type: string) => {
   margin-bottom: 1rem;
 }
 
+/* Price Badge */
+.price-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  transition: all 0.3s;
+}
+
+.card:hover .price-badge {
+  background: rgba(220, 38, 38, 0.2);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #dc2626;
+  line-height: 1;
+}
+
+.price-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
 .badge {
   display: inline-block;
   padding: 0.3rem 0.8rem;
@@ -264,6 +313,10 @@ const selectCarType = (type: string) => {
   .card h3 {
     font-size: 1.1rem;
   }
+
+  .price {
+    font-size: 1.3rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -273,6 +326,14 @@ const selectCarType = (type: string) => {
   
   .grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .price {
+    font-size: 1.2rem;
+  }
+
+  .price-badge {
+    padding: 0.5rem;
   }
 }
 </style>

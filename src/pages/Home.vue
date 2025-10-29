@@ -11,7 +11,7 @@
         <div class="container">
           <div class="welcome-content">
             <h1>สวัสดี, <span class="user-name">{{ userName }}</span>! 👋</h1>
-            <p class="welcome-subtitle">ยินดีต้อนรับกลับสู่ระบบจองล้างรรถ CYBERCAR</p>
+            <p class="welcome-subtitle">ยินดีต้อนรับกลับสู่ระบบจองล้างรถ CYBERCAR</p>
           </div>
           
           <!-- Quick Stats -->
