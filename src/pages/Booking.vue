@@ -1,4 +1,3 @@
-<!-- src/pages/booking.vue -->
 <template>
   <div class="booking-page">
     <Navigator />
@@ -56,9 +55,11 @@
           </div>
         </div>
 
-        <!-- Step 2: Services -->
+        <!-- Step 2: Services + Date/Time -->
         <div v-if="currentStep === 2" class="content">
           <h2>เลือกบริการ</h2>
+          
+          <!-- Services Grid -->
           <div class="grid">
             <div 
               v-for="service in services" 
@@ -72,6 +73,39 @@
               <h3>{{ service.name }}</h3>
               <p class="price">฿{{ service.price }}</p>
               <small>{{ service.time }}</small>
+            </div>
+          </div>
+
+          <!-- Date & Time Selection -->
+          <div class="datetime-section">
+            <h3>📅 เลือกวันที่และเวลา</h3>
+            
+            <div class="datetime-grid">
+              <div class="form-field">
+                <label>วันที่ <span class="required">*</span></label>
+                <input 
+                  v-model="selectedDate" 
+                  type="date" 
+                  :min="minDate"
+                  required
+                  class="date-input"
+                >
+              </div>
+
+              <div class="form-field">
+                <label>เวลา <span class="required">*</span></label>
+                <select v-model="selectedTime" required class="time-select">
+                  <option value="">เลือกเวลา</option>
+                  <option v-for="time in availableTimes" :key="time" :value="time">
+                    {{ time }} น.
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="selectedDate && selectedTime" class="selected-datetime">
+              <span class="icon">✓</span>
+              <span>{{ formatSelectedDateTime }}</span>
             </div>
           </div>
 
@@ -93,7 +127,11 @@
 
           <div class="actions">
             <button class="btn" @click="currentStep = 1">← ย้อนกลับ</button>
-            <button class="btn primary" :disabled="selectedServices.length === 0" @click="currentStep = 3">
+            <button 
+              class="btn primary" 
+              :disabled="selectedServices.length === 0 || !selectedDate || !selectedTime" 
+              @click="currentStep = 3"
+            >
               ถัดไป →
             </button>
           </div>
@@ -117,8 +155,8 @@
               </div>
             </div>
             <div class="detail-row">
-              <label>วันที่</label>
-              <span>{{ currentDate }}</span>
+              <label>วันที่และเวลา</label>
+              <span>{{ formatSelectedDateTime }}</span>
             </div>
             <div class="detail-row total">
               <label>ยอดชำระ</label>
@@ -148,7 +186,7 @@
           <!-- Terms -->
           <label class="checkbox">
             <input type="checkbox" v-model="acceptTerms">
-            <span>ยอมรับ <a href="#">เงื่อนไขการใช้บริการ</a></span>
+            <span>ยอมรับ <a href="#" @click.prevent>เงื่อนไขการใช้บริการ</a></span>
           </label>
 
           <div class="actions">
@@ -173,6 +211,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Navigator from '../components/Navigator.vue';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const router = useRouter();
 const currentStep = ref(1);
@@ -180,7 +219,38 @@ const selectedVehicle = ref('');
 const selectedServices = ref<string[]>([]);
 const paymentMethod = ref('');
 const acceptTerms = ref(false);
+const selectedDate = ref('');
+const selectedTime = ref('');
 
+// ✅ Computed: minDate
+const minDate = computed(() => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+});
+
+// ✅ Available Times
+const availableTimes = [
+  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+];
+
+// ✅ Computed: formatSelectedDateTime
+const formatSelectedDateTime = computed(() => {
+  if (!selectedDate.value || !selectedTime.value) return '-';
+  
+  const date = new Date(selectedDate.value);
+  const thaiDate = date.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
+  });
+  
+  return `${thaiDate} เวลา ${selectedTime.value} น.`;
+});
+
+// Data
 const vehicles = [
   { id: 'sedan', name: 'รถเก๋ง', desc: '4 ประตู', icon: '🚗' },
   { id: 'truck', name: 'กระบะ', desc: 'Pick-up', icon: '🚙' },
@@ -196,6 +266,7 @@ const services = [
   { id: 'interior', name: 'ซักเบาะ', price: 2000, time: '90 นาที', icon: '🧼' }
 ];
 
+// ✅ Computed: Pricing
 const subtotal = computed(() => 
   selectedServices.value.reduce((sum, id) => 
     sum + (services.find(s => s.id === id)?.price || 0), 0
@@ -212,10 +283,7 @@ const discount = computed(() =>
 
 const total = computed(() => subtotal.value - discount.value);
 
-const currentDate = computed(() => 
-  new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
-);
-
+// Methods
 const toggleService = (id: string) => {
   const index = selectedServices.value.indexOf(id);
   if (index > -1) {
@@ -228,36 +296,82 @@ const toggleService = (id: string) => {
 const getVehicleName = (id: string) => vehicles.find(v => v.id === id)?.name || '';
 const getServiceName = (id: string) => services.find(s => s.id === id)?.name || '';
 
-const confirmBooking = () => {
-  const booking = {
-    id: Date.now(),
-    date: currentDate.value,
-    carType: getVehicleName(selectedVehicle.value),
-    services: selectedServices.value.map(id => getServiceName(id)),
-    total: total.value,
-    paymentMethod: paymentMethod.value,
-    status: 'pending',
-    createdAt: new Date().toISOString()
-  };
+// ✅ Confirm Booking
+const confirmBooking = async () => {
+  try {
+    // ดึงข้อมูล user
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      Swal.fire({
+        title: 'กรุณาเข้าสู่ระบบ',
+        icon: 'warning',
+        confirmButtonColor: '#dc2626',
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff'
+      });
+      router.push('/login');
+      return;
+    }
 
-  const bookings = JSON.parse(localStorage.getItem('bookingHistory') || '[]');
-  bookings.unshift(booking);
-  localStorage.setItem('bookingHistory', JSON.stringify(bookings));
+    const user = JSON.parse(userStr);
 
-  Swal.fire({
-    title: 'จองสำเร็จ! ✓',
-    html: `
-      <div style="padding: 1rem;">
-        <p style="font-size: 1.2rem; margin-bottom: 1rem;">รหัส: #${booking.id}</p>
-        <p style="font-size: 2rem; color: #dc2626; font-weight: 900;">฿${total.value}</p>
-      </div>
-    `,
-    icon: 'success',
-    confirmButtonText: 'ดูประวัติ',
-    confirmButtonColor: '#dc2626'
-  }).then(() => {
-    router.push('/history');
-  });
+    console.log('📤 Sending booking data:', {
+      customer_id: user.id,
+      branch_id: 1,
+      booking_date: selectedDate.value,
+      booking_time: selectedTime.value,
+      vehicle_type: getVehicleName(selectedVehicle.value),
+      services: selectedServices.value.map(id => getServiceName(id)),
+      payment_method: paymentMethod.value,
+      total_amount: total.value
+    });
+
+    // เรียก API
+    const response = await axios.post('http://localhost:3000/api/booking/create', {
+      customer_id: user.id,
+      branch_id: 1,
+      booking_date: selectedDate.value,
+      booking_time: selectedTime.value,
+      vehicle_type: getVehicleName(selectedVehicle.value),
+      services: selectedServices.value.map(id => getServiceName(id)),
+      payment_method: paymentMethod.value,
+      total_amount: total.value
+    });
+
+    if (response.data.success) {
+      await Swal.fire({
+        title: 'จองสำเร็จ! ✓',
+        html: `
+          <div style="padding: 1rem; text-align: left;">
+            <p><strong>รหัสการจอง:</strong> #${response.data.booking.id}</p>
+            <p><strong>Invoice:</strong> ${response.data.booking.invoice_number}</p>
+            <p><strong>วันที่:</strong> ${formatSelectedDateTime.value}</p>
+            <p style="font-size: 2rem; color: #dc2626; font-weight: 900; text-align: center; margin-top: 1rem;">
+              ฿${total.value.toLocaleString()}
+            </p>
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonText: 'ดูประวัติ',
+        confirmButtonColor: '#dc2626',
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff'
+      });
+
+      router.push('/history');
+    }
+
+  } catch (error: any) {
+    console.error('❌ Booking Error:', error);
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด',
+      text: error.response?.data?.message || 'ไม่สามารถจองบริการได้',
+      icon: 'error',
+      confirmButtonColor: '#dc2626',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    });
+  }
 };
 </script>
 
@@ -458,6 +572,84 @@ const confirmBooking = () => {
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* DateTime Section */
+.datetime-section {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(220, 38, 38, 0.2);
+  border-radius: 15px;
+}
+
+.datetime-section h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+.datetime-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.required {
+  color: #dc2626;
+}
+
+.date-input,
+.time-select {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1rem;
+  font-family: 'Kanit', sans-serif;
+  transition: all 0.3s;
+}
+
+.date-input:focus,
+.time-select:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #dc2626;
+}
+
+.time-select option {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.selected-datetime {
+  margin-top: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.selected-datetime .icon {
+  font-size: 1.5rem;
+}
+
 /* Summary */
 .summary {
   padding: 1.5rem;
@@ -600,6 +792,7 @@ const confirmBooking = () => {
   width: 20px;
   height: 20px;
   accent-color: #dc2626;
+  cursor: pointer;
 }
 
 .checkbox a {
@@ -624,6 +817,7 @@ const confirmBooking = () => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  font-family: 'Kanit', sans-serif;
 }
 
 .btn:hover:not(:disabled) {
@@ -654,6 +848,10 @@ const confirmBooking = () => {
   
   .grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .datetime-grid {
+    grid-template-columns: 1fr;
   }
   
   .payment-grid {

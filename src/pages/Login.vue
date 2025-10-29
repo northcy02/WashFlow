@@ -1,27 +1,29 @@
-<!-- src/pages/login.vue -->
+<!-- src/pages/Login.vue -->
 <template>
   <div class="login-page">
+    <!-- ✅ เพิ่ม Navigator -->
     <Navigator />
-
-    <!-- Alert -->
-    <transition name="fade">
-      <div v-if="alertMessage" :class="['alert', alertType]">
-        <span class="icon">{{ alertIcon }}</span>
-        <span>{{ alertMessage }}</span>
-        <button @click="closeAlert">×</button>
-      </div>
-    </transition>
 
     <!-- Main -->
     <div class="main">
       <div class="container">
         <!-- Login Card -->
         <div class="card">
-          <h1>เข้าสู่ระบบ</h1>
+          <div class="card-header">
+            <div class="logo-icon">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 24l4-8h32l4 8M12 24v16h40V24M12 40h4m24 0h4"/>
+                <circle cx="20" cy="40" r="4"/>
+                <circle cx="44" cy="40" r="4"/>
+              </svg>
+            </div>
+            <h1>เข้าสู่ระบบ</h1>
+            <p>กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
+          </div>
           
           <form @submit.prevent="handleLogin">
             <div class="field">
-              <label>ชื่อผู้ใช้</label>
+              <label>👤 ชื่อผู้ใช้</label>
               <input 
                 v-model="formData.username" 
                 type="text" 
@@ -32,35 +34,52 @@
             </div>
 
             <div class="field">
-              <label>รหัสผ่าน</label>
-              <input 
-                v-model="formData.password" 
-                type="password" 
-                placeholder="กรอกรหัสผ่าน"
-                required
-                :disabled="isLoading"
-              >
+              <label>🔒 รหัสผ่าน</label>
+              <div class="password-field">
+                <input 
+                  v-model="formData.password" 
+                  :type="showPassword ? 'text' : 'password'"
+                  placeholder="กรอกรหัสผ่าน"
+                  required
+                  :disabled="isLoading"
+                >
+                <button 
+                  type="button" 
+                  class="toggle-password"
+                  @click="showPassword = !showPassword"
+                  :disabled="isLoading"
+                >
+                  {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+                </button>
+              </div>
             </div>
 
             <button type="submit" class="btn primary" :disabled="isLoading">
               <span v-if="!isLoading">เข้าสู่ระบบ</span>
-              <span v-else class="loading">กำลังเข้าสู่ระบบ...</span>
+              <span v-else class="loading">
+                <span class="spinner"></span>
+                กำลังเข้าสู่ระบบ...
+              </span>
             </button>
           </form>
 
           <div class="divider">
-            <span>หรือ</span>
+            <span>ยังไม่มีบัญชี?</span>
           </div>
 
           <router-link to="/register" class="btn secondary">
             สมัครสมาชิก
           </router-link>
+
+          <div class="back-home">
+            <router-link to="/">← กลับหน้าหลัก</router-link>
+          </div>
         </div>
 
-        <!-- Brand -->
-        <div class="brand">
-          <h2>CYBERCAR</h2>
-          <p>ศูนย์มาตราฐานทำความสะอาดรถยนต์</p>
+        <!-- Info Box -->
+        <div class="info-box">
+          <h3>💡 สำหรับพนักงาน</h3>
+          <p>ใช้ Username และ Password ที่ได้รับจากผู้จัดการ</p>
         </div>
       </div>
     </div>
@@ -68,96 +87,121 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import Navigator from '@/components/Navigator.vue';
 
 const router = useRouter();
+const isLoading = ref(false);
+const showPassword = ref(false);
 
 const formData = reactive({
   username: '',
   password: ''
 });
 
-const alertMessage = ref('');
-const alertType = ref('');
-const isLoading = ref(false);
-
-const alertIcon = computed(() => {
-  const icons: Record<string, string> = {
-    success: '✓',
-    error: '✕',
-    warning: '⚠'
-  };
-  return icons[alertType.value] || '!';
-});
-
-const showAlert = (message: string, type: string = 'error') => {
-  alertMessage.value = message;
-  alertType.value = type;
-  setTimeout(() => closeAlert(), 4000);
-};
-
-const closeAlert = () => {
-  alertMessage.value = '';
-  alertType.value = '';
-};
-
 const handleLogin = async () => {
   if (!formData.username || !formData.password) {
-    showAlert('กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
+    Swal.fire({
+      title: 'กรุณากรอกข้อมูล',
+      text: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน',
+      icon: 'warning',
+      iconColor: '#f59e0b',
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'ตกลง',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    });
     return;
   }
 
   isLoading.value = true;
 
   try {
-    console.log('📤 Logging in...');
-    
-    const res = await axios.post('http://localhost:3000/api/auth/login', {
+    const response = await axios.post('http://localhost:3000/api/auth/unified-login', {
       username: formData.username,
       password: formData.password
     });
 
-    console.log('📥 Login response:', res.data);
+    if (response.data.success) {
+      const { userType, user } = response.data;
 
-    // ✅ บันทึกข้อมูลครบถ้วน
-    const userData = {
-      id: res.data.customer.id,
-      username: res.data.customer.username,
-      firstName: res.data.customer.firstName,
-      lastName: res.data.customer.lastName,
-      fullName: res.data.customer.fullName,
-      phone: res.data.customer.phone || '',
-      address: res.data.customer.address || '',
-      memberSince: res.data.customer.memberSince || new Date().toISOString()
-    };
+      if (userType === 'customer') {
+        // ✅ บันทึก Customer
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.removeItem('employee');
+        localStorage.removeItem('isEmployeeLoggedIn');
 
-    console.log('💾 Saving user data:', userData);
+        await Swal.fire({
+          title: 'เข้าสู่ระบบสำเร็จ! 🎉',
+          html: `
+            <div style="text-align: center; padding: 1rem;">
+              <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">ยินดีต้อนรับ</p>
+              <p style="font-size: 1.5rem; font-weight: 700; color: #dc2626;">${user.fullName}</p>
+            </div>
+          `,
+          icon: 'success',
+          iconColor: '#10b981',
+          confirmButtonColor: '#dc2626',
+          confirmButtonText: 'เริ่มใช้งาน',
+          timer: 2000,
+          timerProgressBar: true,
+          background: 'rgba(30, 30, 30, 0.98)',
+          color: '#ffffff'
+        });
 
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('isLoggedIn', 'true');
+        // ✅ Notify Navigator
+        window.dispatchEvent(new CustomEvent('loginStatusChanged'));
+        
+        router.push('/');
 
-    // แจ้งเตือน components อื่นๆ
-    window.dispatchEvent(new CustomEvent('loginStatusChanged'));
+      } else if (userType === 'employee') {
+        // ✅ บันทึก Employee
+        localStorage.setItem('employee', JSON.stringify(user));
+        localStorage.setItem('isEmployeeLoggedIn', 'true');
+        localStorage.removeItem('user');
+        localStorage.removeItem('isLoggedIn');
 
-    showAlert('เข้าสู่ระบบสำเร็จ!', 'success');
+        await Swal.fire({
+          title: 'เข้าสู่ระบบสำเร็จ! 👨‍💼',
+          html: `
+            <div style="text-align: center; padding: 1rem;">
+              <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">ยินดีต้อนรับ</p>
+              <p style="font-size: 1.5rem; font-weight: 700; color: #dc2626; margin-bottom: 0.5rem;">${user.fullName}</p>
+              <p style="color: #fbbf24; font-weight: 600; font-size: 1rem;">ตำแหน่ง: ${user.role}</p>
+              <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">สาขา: ${user.branchName}</p>
+            </div>
+          `,
+          icon: 'success',
+          iconColor: '#10b981',
+          confirmButtonColor: '#dc2626',
+          confirmButtonText: 'ไปหน้า Dashboard',
+          timer: 3000,
+          timerProgressBar: true,
+          background: 'rgba(30, 30, 30, 0.98)',
+          color: '#ffffff'
+        });
 
-    setTimeout(() => {
-      router.push('/');
-    }, 1500);
-
-  } catch (err: any) {
-    console.error('❌ Login error:', err);
-    
-    if (err.response) {
-      showAlert(err.response.data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
-    } else if (err.request) {
-      showAlert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
-    } else {
-      showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', 'error');
+        router.push('/employee/dashboard');
+      }
     }
+
+  } catch (error: any) {
+    console.error('❌ Login error:', error);
+    
+    Swal.fire({
+      title: 'เข้าสู่ระบบไม่สำเร็จ',
+      text: error.response?.data?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+      icon: 'error',
+      iconColor: '#ef4444',
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'ลองอีกครั้ง',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    });
   } finally {
     isLoading.value = false;
   }
@@ -173,80 +217,9 @@ const handleLogin = async () => {
 
 .login-page {
   min-height: 100vh;
-  background: #000;
+  background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
   color: #fff;
   font-family: 'Kanit', sans-serif;
-}
-
-/* Alert */
-.alert {
-  position: fixed;
-  top: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: rgba(30, 30, 30, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  min-width: 300px;
-  max-width: 500px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-}
-
-.alert.success {
-  border: 2px solid #10b981;
-  color: #10b981;
-}
-
-.alert.error {
-  border: 2px solid #ef4444;
-  color: #ef4444;
-}
-
-.alert.warning {
-  border: 2px solid #f59e0b;
-  color: #f59e0b;
-}
-
-.alert .icon {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.alert button {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 2rem;
-  cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background 0.3s;
-}
-
-.alert button:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.3s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-20px);
 }
 
 /* Main */
@@ -257,8 +230,9 @@ const handleLogin = async () => {
   justify-content: center;
   padding: 6rem 2rem 2rem;
   background: 
-    linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.85)),
+    linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.9)),
     url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=1920') center/cover;
+  background-attachment: fixed;
 }
 
 .container {
@@ -268,20 +242,49 @@ const handleLogin = async () => {
 
 /* Card */
 .card {
-  background: rgba(30, 30, 30, 0.9);
+  background: rgba(30, 30, 30, 0.95);
   backdrop-filter: blur(20px);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(220, 38, 38, 0.3);
   border-radius: 20px;
   padding: 3rem 2.5rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(220, 38, 38, 0.3);
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  padding: 1rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(139, 0, 0, 0.3));
+  border: 3px solid rgba(220, 38, 38, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-icon svg {
+  width: 100%;
+  height: 100%;
+  color: #dc2626;
+  filter: drop-shadow(0 0 10px rgba(220, 38, 38, 0.6));
 }
 
 .card h1 {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 2rem;
-  text-align: center;
-  color: #dc2626;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.card-header p {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 form {
@@ -298,20 +301,53 @@ form {
 }
 
 .field label {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
 }
 
 .field input {
-  padding: 0.9rem 1.2rem;
+  padding: 1rem 1.2rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 12px;
   color: #fff;
   font-size: 1rem;
   transition: all 0.3s;
   font-family: inherit;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  flex: 1;
+  padding-right: 3rem;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  transition: all 0.3s;
+}
+
+.toggle-password:hover:not(:disabled) {
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.toggle-password:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .field input::placeholder {
@@ -322,6 +358,7 @@ form {
   outline: none;
   background: rgba(255, 255, 255, 0.08);
   border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
 }
 
 .field input:disabled {
@@ -330,8 +367,8 @@ form {
 }
 
 .btn {
-  padding: 1rem;
-  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -340,18 +377,22 @@ form {
   font-family: inherit;
   text-decoration: none;
   text-align: center;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .btn.primary {
-  background: #dc2626;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: #fff;
+  box-shadow: 0 5px 20px rgba(220, 38, 38, 0.3);
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: #b91c1c;
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 8px 30px rgba(220, 38, 38, 0.5);
 }
 
 .btn.primary:disabled {
@@ -367,17 +408,26 @@ form {
 
 .btn.secondary:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(220, 38, 38, 0.5);
 }
 
 .loading {
-  display: inline-block;
-  animation: pulse 1.5s infinite;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Divider */
@@ -392,7 +442,7 @@ form {
   content: '';
   position: absolute;
   top: 50%;
-  width: 40%;
+  width: 42%;
   height: 1px;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -401,33 +451,51 @@ form {
 .divider::after { right: 0; }
 
 .divider span {
-  background: rgba(30, 30, 30, 0.9);
+  background: rgba(30, 30, 30, 0.95);
   padding: 0 1rem;
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Brand */
-.brand {
-  margin-top: 2rem;
+/* Back Home */
+.back-home {
   text-align: center;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.brand h2 {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: #dc2626;
-  margin-bottom: 0.5rem;
-  letter-spacing: 2px;
-}
-
-.brand p {
-  font-size: 0.9rem;
+.back-home a {
   color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.back-home a:hover {
+  color: #dc2626;
+}
+
+/* Info Box */
+.info-box {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(220, 38, 38, 0.1);
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-radius: 15px;
+  text-align: center;
+}
+
+.info-box h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: #dc2626;
+}
+
+.info-box p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
 }
 
 /* Responsive */
@@ -444,9 +512,9 @@ form {
     font-size: 1.8rem;
   }
 
-  .alert {
-    min-width: 90%;
-    max-width: 90%;
+  .logo-icon {
+    width: 70px;
+    height: 70px;
   }
 }
 
@@ -457,6 +525,11 @@ form {
 
   .card h1 {
     font-size: 1.5rem;
+  }
+
+  .logo-icon {
+    width: 60px;
+    height: 60px;
   }
 }
 </style>

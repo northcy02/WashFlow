@@ -88,20 +88,69 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Navigator from '../components/Navigator.vue';
 import Swal from 'sweetalert2';
+import axios from 'axios'; // ✅ เพิ่ม
 
 const router = useRouter();
 const historyList = ref<any[]>([]);
 
-const loadHistory = () => {
-  const saved = localStorage.getItem('bookingHistory');
-  if (saved) {
-    historyList.value = JSON.parse(saved);
+// ✅ แก้ไข: ดึงข้อมูลจาก API
+const loadHistory = async () => {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      router.push('/login');
+      return;
+    }
+
+    const user = JSON.parse(userStr);
+
+    const response = await axios.get(`http://localhost:3000/api/booking/history/${user.id}`);
+
+    if (response.data.success) {
+      historyList.value = response.data.bookings.map((booking: any) => {
+        // แยก services จาก invoice_description
+        const servicesMatch = booking.invoice_description?.match(/บริการ: (.+)/);
+        const servicesArray = servicesMatch ? servicesMatch[1].split(', ') : [];
+        
+        // แยก vehicle_type จาก invoice_description
+        const vehicleMatch = booking.invoice_description?.match(/(.+) \|/);
+        const vehicleType = vehicleMatch ? vehicleMatch[1].replace('จองบริการล้างรถ - ', '') : '-';
+
+        return {
+          id: booking.booking_ID,
+          date: new Date(booking.booking_date).toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          carType: vehicleType,
+          services: servicesArray,
+          total: booking.payment_amount,
+          paymentMethod: booking.payment_method,
+          status: booking.booking_status,
+          invoiceNumber: booking.invoice_number
+        };
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Load History Error:', error);
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่สามารถโหลดประวัติได้',
+      icon: 'error',
+      confirmButtonColor: '#dc2626'
+    });
   }
 };
 
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
     pending: 'รอดำเนินการ',
+    confirmed: 'ยืนยันแล้ว',
+    in_progress: 'กำลังดำเนินการ',
     completed: 'สำเร็จ',
     cancelled: 'ยกเลิกแล้ว'
   };
@@ -113,21 +162,26 @@ const viewDetail = (item: any) => {
     title: 'รายละเอียด',
     html: `
       <div style="text-align: left; padding: 1rem;">
-        <p style="margin: 0.5rem 0;"><strong>รหัส:</strong> #${item.id}</p>
-        <p style="margin: 0.5rem 0;"><strong>วันที่:</strong> ${item.date}</p>
-        <p style="margin: 0.5rem 0;"><strong>รถ:</strong> ${item.carType}</p>
-        <p style="margin: 0.5rem 0;"><strong>บริการ:</strong> ${item.services.join(', ')}</p>
-        <p style="margin: 0.5rem 0;"><strong>ราคา:</strong> ฿${item.total}</p>
-        <p style="margin: 0.5rem 0;"><strong>สถานะ:</strong> ${getStatusText(item.status)}</p>
+        <p><strong>รหัส:</strong> #${item.id}</p>
+        <p><strong>Invoice:</strong> ${item.invoiceNumber || '-'}</p>
+        <p><strong>วันที่:</strong> ${item.date}</p>
+        <p><strong>รถ:</strong> ${item.carType}</p>
+        <p><strong>บริการ:</strong> ${item.services.join(', ')}</p>
+        <p><strong>ราคา:</strong> ฿${item.total}</p>
+        <p><strong>ชำระด้วย:</strong> ${item.paymentMethod}</p>
+        <p><strong>สถานะ:</strong> ${getStatusText(item.status)}</p>
       </div>
     `,
     confirmButtonText: 'ปิด',
-    confirmButtonColor: '#dc2626'
+    confirmButtonColor: '#dc2626',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff'
   });
 };
 
-const cancelBooking = (item: any) => {
-  Swal.fire({
+// ✅ แก้ไข: ยกเลิกการจองผ่าน API
+const cancelBooking = async (item: any) => {
+  const result = await Swal.fire({
     title: 'ยกเลิกการจอง?',
     text: `ต้องการยกเลิกการจอง #${item.id}`,
     icon: 'warning',
@@ -135,32 +189,49 @@ const cancelBooking = (item: any) => {
     confirmButtonText: 'ยกเลิก',
     cancelButtonText: 'ย้อนกลับ',
     confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#6b7280'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      item.status = 'cancelled';
-      localStorage.setItem('bookingHistory', JSON.stringify(historyList.value));
+    cancelButtonColor: '#6b7280',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const response = await axios.put(`http://localhost:3000/api/booking/cancel/${item.id}`);
       
+      if (response.data.success) {
+        await Swal.fire({
+          title: 'ยกเลิกสำเร็จ',
+          icon: 'success',
+          confirmButtonColor: '#dc2626',
+          background: 'rgba(30, 30, 30, 0.98)',
+          color: '#ffffff'
+        });
+
+        loadHistory(); // โหลดข้อมูลใหม่
+      }
+
+    } catch (error) {
       Swal.fire({
-        title: 'ยกเลิกสำเร็จ',
-        icon: 'success',
-        confirmButtonColor: '#dc2626'
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถยกเลิกการจองได้',
+        icon: 'error',
+        confirmButtonColor: '#dc2626',
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff'
       });
     }
-  });
+  }
 };
 
 const rebook = (item: any) => {
-  router.push({
-    path: '/booking',
-    query: { carType: item.carType }
-  });
+  router.push('/booking');
 };
 
 onMounted(() => {
   loadHistory();
 });
 </script>
+
 
 <style scoped>
 * {

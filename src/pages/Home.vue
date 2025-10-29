@@ -1,263 +1,362 @@
-<!-- src/pages/home.vue -->
+<!-- src/pages/Home.vue -->
 <template>
   <div class="home-page">
     <!-- Navigator Component -->
     <Navigator />
 
-    <!-- Hero Banner - Featured Content -->
-    <section class="hero-banner">
-      <div class="banner-overlay"></div>
-      <div class="banner-content">
-        <div class="featured-info">
-          <h3>ทำไมถึงต้องจองกับเรา?</h3>
+    <!-- ✅ Customer Home (ถ้า Login แล้ว) -->
+    <div v-if="isCustomer" class="customer-section">
+      <!-- Welcome Hero -->
+      <section class="welcome-hero">
+        <div class="container">
+          <div class="welcome-content">
+            <h1>สวัสดี, <span class="user-name">{{ userName }}</span>! 👋</h1>
+            <p class="welcome-subtitle">ยินดีต้อนรับกลับสู่ระบบจองล้างรรถ CYBERCAR</p>
+          </div>
           
-          <div class="info-list">
-            <div class="info-item">
-              <span class="icon">🚗</span>
-              <div class="info-text">
-                <h4>บริการรวดเร็วทันใจ</h4>
-                <div class="rating">⭐⭐⭐⭐⭐</div>
+          <!-- Quick Stats -->
+          <div class="quick-stats">
+            <div class="stat-box">
+              <span class="stat-icon">📋</span>
+              <div class="stat-info">
+                <h3>{{ userStats.total || 0 }}</h3>
+                <p>จองทั้งหมด</p>
               </div>
             </div>
-            
-            <div class="info-item">
-              <span class="icon">💎</span>
-              <div class="info-text">
-                <h4>บริการมาตราฐานระดับสูง</h4>
-                <div class="rating">⭐⭐⭐⭐⭐</div>
+            <div class="stat-box">
+              <span class="stat-icon">⏳</span>
+              <div class="stat-info">
+                <h3>{{ userStats.pending || 0 }}</h3>
+                <p>รอดำเนินการ</p>
               </div>
             </div>
-            
-            <div class="info-item">
-              <span class="icon">⚡</span>
-              <div class="info-text">
-                <h4>ความปลอดภัยและสะอาด</h4>
-                <div class="rating">⭐⭐⭐⭐⭐</div>
-              </div>
-            </div>
-
-            <div class="info-item">
-              <span class="icon">💰</span>
-              <div class="info-text">
-                <h4>ราคาสมเหตุสมผล</h4>
-                <div class="rating">⭐⭐⭐⭐⭐</div>
-              </div>
-            </div>
-
-            <div class="info-item">
-              <span class="icon">🏆</span>
-              <div class="info-text">
-                <h4>ทีมงานมืออาชีพ</h4>
-                <div class="rating">⭐⭐⭐⭐⭐</div>
-              </div>
-            </div>
-
-            <div class="info-item">
-              <span class="icon">📱</span>
-              <div class="info-text">
-                <h4>จองง่ายผ่านแอพ</h4>
-                <div class="rating">⭐⭐⭐⭐⭐</div>
+            <div class="stat-box">
+              <span class="stat-icon">✅</span>
+              <div class="stat-info">
+                <h3>{{ userStats.completed || 0 }}</h3>
+                <p>สำเร็จแล้ว</p>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <div class="cta-section">
-          <div class="cta-lines">
-            <div class="line"></div>
-            <div class="line"></div>
-            <div class="line"></div>
+      <!-- Quick Actions -->
+      <section class="quick-actions-section">
+        <div class="container">
+          <h2 class="section-title">
+            <span class="icon">⚡</span>
+            การดำเนินการด่วน
+          </h2>
+          <div class="actions-grid">
+            <router-link to="/booking" class="action-card primary">
+              <div class="action-icon">📅</div>
+              <h3>จองบริการ</h3>
+              <p>จองล้างรถเลย</p>
+              <span class="action-arrow">→</span>
+            </router-link>
+
+            <router-link to="/history" class="action-card">
+              <div class="action-icon">📜</div>
+              <h3>ประวัติการจอง</h3>
+              <p>ดูรายการทั้งหมด</p>
+              <span class="action-arrow">→</span>
+            </router-link>
+
+            <router-link to="/services" class="action-card">
+              <div class="action-icon">🚗</div>
+              <h3>บริการของเรา</h3>
+              <p>ดูบริการทั้งหมด</p>
+              <span class="action-arrow">→</span>
+            </router-link>
+
+            <router-link to="/profile" class="action-card">
+              <div class="action-icon">👤</div>
+              <h3>โปรไฟล์</h3>
+              <p>จัดการข้อมูล</p>
+              <span class="action-arrow">→</span>
+            </router-link>
           </div>
-          <h1 class="cta-title" @click="goToBooking" style="cursor: pointer;">
-            <span class="highlight">จองล้าง</span>
-            <span class="text-white">รถตอนนี้</span>
-            <span class="text-red">CLICK NOW!</span>
-          </h1>
-          <button class="btn-booking" @click="goToBooking">จองคิวเลย</button>
         </div>
-      </div>
-      
-      <div class="featured-image">
-        <img src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600" alt="Car Wash">
-      </div>
-    </section>
+      </section>
 
-    <!-- Tagline Bar -->
-    <div class="tagline-bar">
-      <div class="container">
-        <h2>CYBERCAR ศูนย์มาตราฐานทำความสะอาดรถยนต์</h2>
-      </div>
+      <!-- Recent Bookings -->
+      <section class="recent-bookings-section" v-if="recentBookings.length > 0">
+        <div class="container">
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="icon">📋</span>
+              การจองล่าสุด
+            </h2>
+            <router-link to="/history" class="view-all">ดูทั้งหมด →</router-link>
+          </div>
+
+          <div class="bookings-grid">
+            <div v-for="booking in recentBookings.slice(0, 3)" :key="booking.booking_ID" class="booking-card">
+              <div class="booking-header">
+                <span class="booking-id">#{{ booking.booking_ID }}</span>
+                <span class="booking-status" :class="booking.booking_status">
+                  {{ getStatusText(booking.booking_status) }}
+                </span>
+              </div>
+              <div class="booking-body">
+                <p class="booking-date">
+                  <span class="icon">📅</span>
+                  {{ formatDate(booking.booking_date) }}
+                </p>
+                <p class="booking-service">{{ extractServices(booking.invoice_description) }}</p>
+                <p class="booking-price">฿{{ booking.payment_amount }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <!-- Services Icons -->
-    <section class="services-section">
-      <div class="container">
-        <div class="services-grid">
-          <div class="service-item" @click="goToServices">
-            <div class="service-icon-svg">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                <!-- Car Icon -->
-                <path d="M12 24l4-8h32l4 8M12 24v16h40V24M12 40h4m24 0h4M12 24h40"/>
-                <circle cx="20" cy="40" r="4"/>
-                <circle cx="44" cy="40" r="4"/>
-                <path d="M16 24h32M20 16h24"/>
-                <path d="M28 12l-2 4M36 12l2 4"/>
-              </svg>
-            </div>
-            <p>เคลือบสีรถ</p>
-          </div>
-          
-          <div class="service-item" @click="goToServices">
-            <div class="service-icon-svg">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                <!-- Car Wash Icon -->
-                <path d="M12 28l4-8h32l4 8M12 28v12h40V28"/>
-                <circle cx="20" cy="40" r="3"/>
-                <circle cx="44" cy="40" r="3"/>
-                <path d="M20 12v8M26 8v12M32 10v10M38 8v12M44 12v8"/>
-                <circle cx="20" cy="12" r="1.5"/>
-                <circle cx="26" cy="8" r="1.5"/>
-                <circle cx="32" cy="10" r="1.5"/>
-                <circle cx="38" cy="8" r="1.5"/>
-                <circle cx="44" cy="12" r="1.5"/>
-              </svg>
-            </div>
-            <p>ล้างรถ</p>
-          </div>
-          
-          <div class="service-item" @click="goToServices">
-            <div class="service-icon-svg">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                <!-- Polish Icon -->
-                <path d="M12 26l4-8h32l4 8M12 26v14h40V26"/>
-                <circle cx="20" cy="40" r="3"/>
-                <circle cx="44" cy="40" r="3"/>
-                <path d="M24 18l8-2 8 2"/>
-                <circle cx="32" cy="14" r="3"/>
-                <path d="M28 14l8 0M30 11l4 0"/>
-              </svg>
-            </div>
-            <p>ขัดสีรถ</p>
-          </div>
-          
-          <div class="service-item" @click="goToServices">
-            <div class="service-icon-svg">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                <!-- Vacuum Icon -->
-                <rect x="20" y="28" width="24" height="16" rx="2"/>
-                <path d="M32 28V16M28 16h8M30 12h4"/>
-                <line x1="24" y1="32" x2="40" y2="32"/>
-                <line x1="24" y1="36" x2="40" y2="36"/>
-                <line x1="24" y1="40" x2="40" y2="40"/>
-                <path d="M44 36h4M44 32h6M44 40h3"/>
-              </svg>
-            </div>
-            <p>ดูดฝุ่น</p>
-          </div>
-          
-          <div class="service-item" @click="goToServices">
-            <div class="service-icon-svg">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                <!-- Tools Icon -->
-                <path d="M20 20l12 12M32 32l-8 8"/>
-                <circle cx="16" cy="16" r="4"/>
-                <circle cx="28" cy="36" r="3"/>
-                <path d="M36 20h12v12M48 20l-8 8"/>
-                <rect x="38" y="38" width="10" height="10" rx="1"/>
-              </svg>
-            </div>
-            <p>อื่นๆ</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Featured Section - NO TIME TO LEAVE YOUR CAR DIRTY -->
-    <section class="featured-dirty-section">
-      <div class="container">
-        <div class="dirty-grid">
-          <!-- Left Card - Services Menu -->
-          <div class="services-menu">
-            <h3>บริการของเรา</h3>
-            <ul>
-              <li class="active" @click="goToServices">เคลือบสีรถ</li>
-              <li @click="goToServices">ล้างรถ</li>
-              <li @click="goToServices">ดูดฝุ่น</li>
-              <li @click="goToServices">ขัดสีรถ</li>
-              <li @click="goToServices">ซักเบาะ</li>
-            </ul>
-          </div>
-
-          <!-- Center Image with Text -->
-          <div class="center-showcase">
-            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=700" alt="Car">
-            <div class="showcase-overlay">
-              <h2 class="showcase-title">
-                NO TIME TO
-                <span class="text-red">LEAVE YOUR</span>
-                <span class="text-red">CAR DIRTY</span>
-              </h2>
-            </div>
-          </div>
-
-          <!-- Right Card - Professional Service -->
-          <div class="professional-card">
-            <img src="https://images.unsplash.com/photo-1590362891991-f776e747a588?w=1000" alt="Professional">
-            <div class="card-content">
-              <h4>ทีมงานมืออาชีพ</h4>
-              <p>บริการล้างรถด้วยมาตรฐานสูงสุด</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Bottom Cards Section -->
-    <section class="bottom-cards">
-      <div class="container">
-        <div class="cards-grid-redesign">
-          <!-- Left Column: 2 Rows -->
-          <div class="left-column">
-            <!-- Card 1: Top - Car Detail with Text -->
-            <div class="detail-card wide-card" @click="goToBooking">
-              <div class="card-overlay"></div>
-              <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1000" alt="Car Wash Service">
-              <div class="card-info bottom-left">
-                <h3>บริการทำความสะอาดรถยนต์</h3>
+    <!-- ✅ Guest Home (ถ้ายังไม่ Login) - โค้ดเดิมทั้งหมด -->
+    <div v-else class="guest-section">
+      <!-- Hero Banner - Featured Content -->
+      <section class="hero-banner">
+        <div class="banner-overlay"></div>
+        <div class="banner-content">
+          <div class="featured-info">
+            <h3>ทำไมถึงต้องจองกับเรา?</h3>
+            
+            <div class="info-list">
+              <div class="info-item">
+                <span class="icon">🚗</span>
+                <div class="info-text">
+                  <h4>บริการรวดเร็วทันใจ</h4>
+                  <div class="rating">⭐⭐⭐⭐⭐</div>
+                </div>
               </div>
-            </div>
+              
+              <div class="info-item">
+                <span class="icon">💎</span>
+                <div class="info-text">
+                  <h4>บริการมาตราฐานระดับสูง</h4>
+                  <div class="rating">⭐⭐⭐⭐⭐</div>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <span class="icon">⚡</span>
+                <div class="info-text">
+                  <h4>ความปลอดภัยและสะอาด</h4>
+                  <div class="rating">⭐⭐⭐⭐⭐</div>
+                </div>
+              </div>
 
-            <!-- Bottom Row: 1 Card -->
-            <div class="bottom-row">
-              <!-- Card 3: Steering Wheel -->
-              <div class="detail-card small-card" @click="goToCarTypes">
-                <div class="card-overlay"></div>
-                <img src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1000" alt="Car Interior">
-                <div class="card-info centered">
-                  <h3>ภายในสะอาดน่านั่ง</h3>
+              <div class="info-item">
+                <span class="icon">💰</span>
+                <div class="info-text">
+                  <h4>ราคาสมเหตุสมผล</h4>
+                  <div class="rating">⭐⭐⭐⭐⭐</div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <span class="icon">🏆</span>
+                <div class="info-text">
+                  <h4>ทีมงานมืออาชีพ</h4>
+                  <div class="rating">⭐⭐⭐⭐⭐</div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <span class="icon">📱</span>
+                <div class="info-text">
+                  <h4>จองง่ายผ่านแอพ</h4>
+                  <div class="rating">⭐⭐⭐⭐⭐</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Right Column: Tall Card -->
-          <div class="detail-card tall-card-right" @click="goToBooking">
-            <div class="card-overlay"></div>
-            <img src="https://images.unsplash.com/photo-1611566026373-c6c8da0ea861?w=1000" alt="Car Interior">
-            <div class="card-info top-section">
-              <h2 class="big-title">NO TIME TO</h2>
-              <h2 class="big-title-red">WASH?</h2>
-              <h2 class="big-title-red">LEAVE IT TO US</h2>
+          <div class="cta-section">
+            <div class="cta-lines">
+              <div class="line"></div>
+              <div class="line"></div>
+              <div class="line"></div>
             </div>
-            <div class="card-info bottom-section">
-              <div class="worker-container">
-                <img src="https://images.unsplash.com/photo-1590362891991-f776e747a588?w=1000" alt="Worker" class="worker-image">
+            <h1 class="cta-title" @click="handleCTAClick" style="cursor: pointer;">
+              <span class="highlight">จองล้าง</span>
+              <span class="text-white">รถตอนนี้</span>
+              <span class="text-red">CLICK NOW!</span>
+            </h1>
+            <button class="btn-booking" @click="handleCTAClick">จองคิวเลย</button>
+          </div>
+        </div>
+        
+        <div class="featured-image">
+          <img src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600" alt="Car Wash">
+        </div>
+      </section>
+
+      <!-- Tagline Bar -->
+      <div class="tagline-bar">
+        <div class="container">
+          <h2>CYBERCAR ศูนย์มาตราฐานทำความสะอาดรถยนต์</h2>
+        </div>
+      </div>
+
+      <!-- Services Icons -->
+      <section class="services-section">
+        <div class="container">
+          <div class="services-grid">
+            <div class="service-item" @click="goToServices">
+              <div class="service-icon-svg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 24l4-8h32l4 8M12 24v16h40V24M12 40h4m24 0h4M12 24h40"/>
+                  <circle cx="20" cy="40" r="4"/>
+                  <circle cx="44" cy="40" r="4"/>
+                  <path d="M16 24h32M20 16h24"/>
+                  <path d="M28 12l-2 4M36 12l2 4"/>
+                </svg>
+              </div>
+              <p>เคลือบสีรถ</p>
+            </div>
+            
+            <div class="service-item" @click="goToServices">
+              <div class="service-icon-svg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 28l4-8h32l4 8M12 28v12h40V28"/>
+                  <circle cx="20" cy="40" r="3"/>
+                  <circle cx="44" cy="40" r="3"/>
+                  <path d="M20 12v8M26 8v12M32 10v10M38 8v12M44 12v8"/>
+                  <circle cx="20" cy="12" r="1.5"/>
+                  <circle cx="26" cy="8" r="1.5"/>
+                  <circle cx="32" cy="10" r="1.5"/>
+                  <circle cx="38" cy="8" r="1.5"/>
+                  <circle cx="44" cy="12" r="1.5"/>
+                </svg>
+              </div>
+              <p>ล้างรถ</p>
+            </div>
+            
+            <div class="service-item" @click="goToServices">
+              <div class="service-icon-svg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 26l4-8h32l4 8M12 26v14h40V26"/>
+                  <circle cx="20" cy="40" r="3"/>
+                  <circle cx="44" cy="40" r="3"/>
+                  <path d="M24 18l8-2 8 2"/>
+                  <circle cx="32" cy="14" r="3"/>
+                  <path d="M28 14l8 0M30 11l4 0"/>
+                </svg>
+              </div>
+              <p>ขัดสีรถ</p>
+            </div>
+            
+            <div class="service-item" @click="goToServices">
+              <div class="service-icon-svg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="20" y="28" width="24" height="16" rx="2"/>
+                  <path d="M32 28V16M28 16h8M30 12h4"/>
+                  <line x1="24" y1="32" x2="40" y2="32"/>
+                  <line x1="24" y1="36" x2="40" y2="36"/>
+                  <line x1="24" y1="40" x2="40" y2="40"/>
+                  <path d="M44 36h4M44 32h6M44 40h3"/>
+                </svg>
+              </div>
+              <p>ดูดฝุ่น</p>
+            </div>
+            
+            <div class="service-item" @click="goToServices">
+              <div class="service-icon-svg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 20l12 12M32 32l-8 8"/>
+                  <circle cx="16" cy="16" r="4"/>
+                  <circle cx="28" cy="36" r="3"/>
+                  <path d="M36 20h12v12M48 20l-8 8"/>
+                  <rect x="38" y="38" width="10" height="10" rx="1"/>
+                </svg>
+              </div>
+              <p>อื่นๆ</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Featured Section -->
+      <section class="featured-dirty-section">
+        <div class="container">
+          <div class="dirty-grid">
+            <div class="services-menu">
+              <h3>บริการของเรา</h3>
+              <ul>
+                <li class="active" @click="goToServices">เคลือบสีรถ</li>
+                <li @click="goToServices">ล้างรถ</li>
+                <li @click="goToServices">ดูดฝุ่น</li>
+                <li @click="goToServices">ขัดสีรถ</li>
+                <li @click="goToServices">ซักเบาะ</li>
+              </ul>
+            </div>
+
+            <div class="center-showcase">
+              <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=700" alt="Car">
+              <div class="showcase-overlay">
+                <h2 class="showcase-title">
+                  NO TIME TO
+                  <span class="text-red">LEAVE YOUR</span>
+                  <span class="text-red">CAR DIRTY</span>
+                </h2>
+              </div>
+            </div>
+
+            <div class="professional-card">
+              <img src="https://images.unsplash.com/photo-1590362891991-f776e747a588?w=1000" alt="Professional">
+              <div class="card-content">
+                <h4>ทีมงานมืออาชีพ</h4>
+                <p>บริการล้างรถด้วยมาตรฐานสูงสุด</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- Bottom Cards -->
+      <section class="bottom-cards">
+        <div class="container">
+          <div class="cards-grid-redesign">
+            <div class="left-column">
+              <div class="detail-card wide-card" @click="handleCTAClick">
+                <div class="card-overlay"></div>
+                <img src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1000" alt="Car Wash Service">
+                <div class="card-info bottom-left">
+                  <h3>บริการทำความสะอาดรถยนต์</h3>
+                </div>
+              </div>
+
+              <div class="bottom-row">
+                <div class="detail-card small-card" @click="goToCarTypes">
+                  <div class="card-overlay"></div>
+                  <img src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1000" alt="Car Interior">
+                  <div class="card-info centered">
+                    <h3>ภายในสะอาดน่านั่ง</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-card tall-card-right" @click="handleCTAClick">
+              <div class="card-overlay"></div>
+              <img src="https://images.unsplash.com/photo-1611566026373-c6c8da0ea861?w=1000" alt="Car Interior">
+              <div class="card-info top-section">
+                <h2 class="big-title">NO TIME TO</h2>
+                <h2 class="big-title-red">WASH?</h2>
+                <h2 class="big-title-red">LEAVE IT TO US</h2>
+              </div>
+              <div class="card-info bottom-section">
+                <div class="worker-container">
+                  <img src="https://images.unsplash.com/photo-1590362891991-f776e747a588?w=1000" alt="Worker" class="worker-image">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
 
     <!-- Contact Info Bar -->
     <section class="contact-bar">
@@ -276,27 +375,132 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 import Navigator from '../components/Navigator.vue';
 
 const router = useRouter();
 
-// Function สำหรับไปหน้าจองคิว
-const goToBooking = () => {
-  router.push('/booking');
+// ✅ State
+const isCustomer = ref(false);
+const userName = ref('');
+const userStats = ref<any>({
+  total: 0,
+  pending: 0,
+  completed: 0
+});
+const recentBookings = ref<any[]>([]);
+
+// ✅ Load Customer Data
+const loadCustomerData = async () => {
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  
+  if (isLoggedIn) {
+    isCustomer.value = true;
+    
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      userName.value = user.fullName || user.firstName || user.username;
+      
+      // Load Stats & Recent Bookings
+      await loadUserStats(user.id);
+      await loadRecentBookings(user.id);
+    }
+  }
 };
 
-// Function สำหรับไปหน้าบริการ
-const goToServices = () => {
-  router.push('/services');
+// ✅ Load User Stats
+const loadUserStats = async (customerId: number) => {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/booking/history/${customerId}`);
+    
+    if (response.data.success) {
+      const bookings = response.data.bookings;
+      userStats.value = {
+        total: bookings.length,
+        pending: bookings.filter((b: any) => b.booking_status === 'pending').length,
+        completed: bookings.filter((b: any) => b.booking_status === 'completed').length
+      };
+    }
+  } catch (error) {
+    console.error('Error loading stats:', error);
+  }
 };
 
-// Function สำหรับไปหน้าประเภทรถ
-const goToCarTypes = () => {
-  router.push('/car-types');
+// ✅ Load Recent Bookings
+const loadRecentBookings = async (customerId: number) => {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/booking/history/${customerId}`);
+    
+    if (response.data.success) {
+      recentBookings.value = response.data.bookings.slice(0, 3);
+    }
+  } catch (error) {
+    console.error('Error loading bookings:', error);
+  }
 };
+
+// ✅ Handle CTA Click (Guest → Login, Customer → Booking)
+const handleCTAClick = () => {
+  if (isCustomer.value) {
+    router.push('/booking');
+  } else {
+    Swal.fire({
+      title: 'กรุณาเข้าสู่ระบบ',
+      text: 'คุณต้องเข้าสู่ระบบก่อนจองบริการ',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'เข้าสู่ระบบ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.push('/login');
+      }
+    });
+  }
+};
+
+const goToServices = () => router.push('/services');
+const goToCarTypes = () => router.push('/car-types');
+
+// ✅ Format Functions
+const formatDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const extractServices = (description: string) => {
+  const match = description?.match(/บริการ: (.+)/);
+  return match ? match[1] : '-';
+};
+
+const getStatusText = (status: string) => {
+  const map: Record<string, string> = {
+    pending: 'รอดำเนินการ',
+    confirmed: 'ยืนยันแล้ว',
+    in_progress: 'กำลังดำเนินการ',
+    completed: 'สำเร็จ',
+    cancelled: 'ยกเลิก'
+  };
+  return map[status] || status;
+};
+
+// ✅ Lifecycle
+onMounted(() => {
+  loadCustomerData();
+});
 </script>
-
 <style scoped>
 * {
   margin: 0;
@@ -309,6 +513,435 @@ const goToCarTypes = () => {
   background: #0a0a0a;
   color: white;
   font-family: 'Rajdhani', 'Sarabun', sans-serif;
+}
+
+/* ========================================
+   CUSTOMER SECTION
+======================================== */
+
+/* Welcome Hero */
+.welcome-hero {
+  margin-top: 80px;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+  border-bottom: 2px solid rgba(220, 38, 38, 0.3);
+}
+
+.welcome-content {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.welcome-content h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.user-name {
+  color: #dc2626;
+  text-shadow: 0 0 30px rgba(220, 38, 38, 0.8);
+}
+
+.welcome-subtitle {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* Quick Stats */
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stat-box {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.1), transparent);
+  transition: left 0.6s;
+}
+
+.stat-box:hover::before {
+  left: 100%;
+}
+
+.stat-box:hover {
+  transform: translateY(-5px);
+  border-color: rgba(220, 38, 38, 0.5);
+  box-shadow: 0 10px 40px rgba(220, 38, 38, 0.3);
+}
+
+.stat-icon {
+  font-size: 3rem;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(139, 0, 0, 0.2));
+  border-radius: 20px;
+  border: 2px solid rgba(220, 38, 38, 0.3);
+}
+
+.stat-info h3 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #dc2626;
+  margin-bottom: 0.3rem;
+  line-height: 1;
+}
+
+.stat-info p {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* Quick Actions Section */
+.quick-actions-section {
+  padding: 4rem 2rem;
+  background: linear-gradient(to bottom, #0a0a0a 0%, #1a1a1a 100%);
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: #fff;
+}
+
+.section-title .icon {
+  font-size: 2.5rem;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.action-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(220, 38, 38, 0.1), transparent);
+  transition: left 0.6s;
+}
+
+.action-card:hover::before {
+  left: 100%;
+}
+
+.action-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(220, 38, 38, 0.5);
+  background: rgba(220, 38, 38, 0.05);
+  box-shadow: 0 15px 40px rgba(220, 38, 38, 0.3);
+}
+
+.action-card.primary {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(139, 0, 0, 0.15));
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.action-card.primary:hover {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.25), rgba(139, 0, 0, 0.25));
+  border-color: #dc2626;
+  box-shadow: 0 15px 40px rgba(220, 38, 38, 0.5);
+}
+
+.action-icon {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s;
+}
+
+.action-card:hover .action-icon {
+  transform: scale(1.2) rotate(5deg);
+}
+
+.action-card h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.action-card p {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 1rem;
+}
+
+.action-arrow {
+  font-size: 1.5rem;
+  color: #dc2626;
+  transition: all 0.3s;
+}
+
+.action-card:hover .action-arrow {
+  transform: translateX(5px);
+}
+
+/* Recent Bookings Section */
+.recent-bookings-section {
+  padding: 4rem 2rem;
+  background: #0a0a0a;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.view-all {
+  color: #dc2626;
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.view-all:hover {
+  color: #fff;
+  transform: translateX(5px);
+}
+
+.bookings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.booking-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  transition: all 0.3s;
+}
+
+.booking-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(220, 38, 38, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 40px rgba(220, 38, 38, 0.3);
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.booking-id {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.booking-status {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.booking-status.pending {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.booking-status.confirmed {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.booking-status.in_progress {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+.booking-status.completed {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.booking-status.cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.booking-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.booking-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.booking-date .icon {
+  font-size: 1.2rem;
+}
+
+.booking-service {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.booking-price {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #10b981;
+  margin-top: 0.5rem;
+}
+
+/* ========================================
+   RESPONSIVE - CUSTOMER SECTION
+======================================== */
+
+@media (max-width: 1200px) {
+  .quick-stats,
+  .actions-grid,
+  .bookings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-content h1 {
+    font-size: 2rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+
+  .quick-stats {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .stat-box {
+    padding: 1.5rem;
+  }
+
+  .stat-icon {
+    font-size: 2.5rem;
+    width: 60px;
+    height: 60px;
+  }
+
+  .stat-info h3 {
+    font-size: 2rem;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .bookings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-hero,
+  .quick-actions-section,
+  .recent-bookings-section {
+    padding: 2rem 1rem;
+  }
+
+  .action-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .action-icon {
+    font-size: 3rem;
+  }
+
+  .booking-card {
+    padding: 1.5rem;
+  }
 }
 
 /* Hero Banner */

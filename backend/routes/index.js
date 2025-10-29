@@ -1,69 +1,61 @@
 // backend/routes/index.js
 import express from 'express';
 import authRoutes from './auth.js';
+import bookingRoutes from './booking.js';
+import employeeRoutes from './employee.js';
+import bookingManagementRoutes from './bookingManagement.js';
 
 const router = express.Router();
 
-// Test route - API Information
+// ✅ Root Route
 router.get('/', (req, res) => {
   res.json({ 
     message: 'WashFlow API Server',
     version: '1.0.0',
     status: 'running',
     endpoints: {
-      // Authentication
-      register: {
-        method: 'POST',
-        path: '/api/auth/register',
-        description: 'สมัครสมาชิกใหม่',
-        body: {
-          username: 'string (required)',
-          password: 'string (required)',
-          cust_fname: 'string (required)',
-          cust_lname: 'string (required)',
-          cust_tel: 'string (optional)',
-          cust_address: 'string (optional)'
-        }
+      auth: {
+        register: 'POST /api/auth/register',
+        login: 'POST /api/auth/login',
+        unifiedLogin: 'POST /api/auth/unified-login',
+        getProfile: 'GET /api/auth/profile/:id',
+        updateProfile: 'PUT /api/auth/profile/:id',
+        changePassword: 'PUT /api/auth/change-password/:id',
+        deleteAccount: 'DELETE /api/auth/delete/:id'
       },
-      login: {
-        method: 'POST',
-        path: '/api/auth/login',
-        description: 'เข้าสู่ระบบ',
-        body: {
-          username: 'string (required)',
-          password: 'string (required)'
-        }
+      booking: {
+        create: 'POST /api/booking/create',
+        history: 'GET /api/booking/history/:customerId',
+        cancel: 'PUT /api/booking/cancel/:id'
       },
-      getProfile: {
-        method: 'GET',
-        path: '/api/auth/profile/:id',
-        description: 'ดูข้อมูลโปรไฟล์'
+      employee: {
+        dashboard: 'GET /api/employee/dashboard'
       },
-      updateProfile: {
-        method: 'PUT',
-        path: '/api/auth/profile/:id',
-        description: 'แก้ไขข้อมูลโปรไฟล์',
-        body: {
-          cust_fname: 'string',
-          cust_lname: 'string',
-          cust_tel: 'string',
-          cust_address: 'string'
-        }
+      management: {
+        allBookings: 'GET /api/management/booking/all',
+        updateStatus: 'PUT /api/management/booking/status/:id',
+        stats: 'GET /api/management/booking/stats',
+        revenue: 'GET /api/management/booking/revenue'
       }
     }
   });
 });
 
-// Health check route
+// ✅ Health Check
 router.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    timestamp: new Date().toISOString()
   });
 });
 
-// Auth routes
+// ✅ Routes - ไม่ต้องเพิ่ม router.post('/create') เพราะมีใน bookingRoutes แล้ว
 router.use('/auth', authRoutes);
+router.use('/booking', bookingRoutes);
+router.use('/employee', employeeRoutes);
+router.use('/management/booking', bookingManagementRoutes);
+
+// ❌ ลบบรรทัดนี้ออก
+// router.post('/create')
 
 export default router;
