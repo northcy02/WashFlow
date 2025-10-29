@@ -1,22 +1,19 @@
 // src/Router/index.ts
 import { createRouter, createWebHistory } from 'vue-router'
-import Swal from 'sweetalert2'
 import Home from '../pages/Home.vue'
 import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
 import Booking from '../pages/Booking.vue'
-import Services from '../pages/Services.vue'
-import CarTypes from '../pages/CarTypes.vue'
 import History from '../pages/History.vue'
 import Profile from '../pages/Profile.vue'
+import Services from '../pages/Services.vue'
+import CarTypes from '../pages/CarTypes.vue'
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard.vue'
+import EmployeeManagement from '../pages/employee/EmployeeManagement.vue'
+import PaymentManagement from '../pages/employee/PaymentManagement.vue'
 
 const routes = [
-  { 
-    path: '/', 
-    name: 'Home', 
-    component: Home 
-  },
+  { path: '/', name: 'Home', component: Home },
   { 
     path: '/login', 
     name: 'Login', 
@@ -36,16 +33,6 @@ const routes = [
     meta: { requiresAuth: true }
   },
   { 
-    path: '/services', 
-    name: 'Services', 
-    component: Services
-  },
-  { 
-    path: '/car-types', 
-    name: 'CarTypes', 
-    component: CarTypes
-  },
-  { 
     path: '/history', 
     name: 'History', 
     component: History,
@@ -58,9 +45,35 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/services',
+    name: 'Services',
+    component: Services
+  },
+  {
+    path: '/car-types',
+    name: 'CarTypes',
+    component: CarTypes
+  },
+  
+  // ========================================
+  // EMPLOYEE ROUTES
+  // ========================================
+  {
     path: '/employee/dashboard',
     name: 'EmployeeDashboard',
     component: EmployeeDashboard,
+    meta: { requiresEmployee: true }
+  },
+  {
+    path: '/employee/management',
+    name: 'EmployeeManagement',
+    component: EmployeeManagement,
+    meta: { requiresEmployee: true, requiresManager: true }
+  },
+  {
+    path: '/employee/payment',  // ✅ แก้ไข: เอา 's' ออก
+    name: 'PaymentManagement',
+    component: PaymentManagement,
     meta: { requiresEmployee: true }
   }
 ]
@@ -70,92 +83,76 @@ const router = createRouter({
   routes
 })
 
-// ✅ Navigation Guard (ปรับปรุงแล้ว)
+// ========================================
+// NAVIGATION GUARDS
+// ========================================
 router.beforeEach((to, from, next) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
-  const isEmployee = localStorage.getItem('isEmployeeLoggedIn') === 'true'
-
-  console.log('🔍 Route Guard:', {
+  const isEmployeeLoggedIn = localStorage.getItem('isEmployeeLoggedIn') === 'true'
+  
+  // Check Manager role
+  let isManager = false
+  if (isEmployeeLoggedIn) {
+    const empStr = localStorage.getItem('employee')
+    if (empStr) {
+      const emp = JSON.parse(empStr)
+      isManager = emp.role === 'Manager'
+    }
+  }
+  
+  console.log('🔒 Route Guard:', {
     to: to.path,
-    from: from.path,
     isLoggedIn,
-    isEmployee
+    isEmployeeLoggedIn,
+    isManager,
+    requiresEmployee: to.meta.requiresEmployee,
+    requiresManager: to.meta.requiresManager
   })
-
-  // ✅ 1. Home Route
-  if (to.path === '/') {
-    if (isEmployee) {
-      // ป้องกัน infinite loop
-      if (from.path === '/employee/dashboard') {
-        next(false)
-        return
-      }
-      next('/employee/dashboard')
-      return
-    }
-    // Customer หรือ Guest ผ่านได้
-    next()
+  
+  // Manager only routes
+  if (to.meta.requiresManager && !isManager) {
+    console.log('⛔ Access denied: Manager only')
+    next('/employee/dashboard')
     return
   }
-
-  // ✅ 2. Employee Only Pages
+  
+  // Employee routes
   if (to.meta.requiresEmployee) {
-    if (!isEmployee) {
-      Swal.fire({
-        title: 'ต้องเข้าสู่ระบบพนักงาน',
-        text: 'กรุณาเข้าสู่ระบบด้วยบัญชีพนักงาน',
-        icon: 'warning',
-        confirmButtonColor: '#dc2626',
-        confirmButtonText: 'ไปหน้าเข้าสู่ระบบ',
-        background: 'rgba(30, 30, 30, 0.98)',
-        color: '#ffffff',
-        timer: 3000,
-        timerProgressBar: true
-      })
+    if (!isEmployeeLoggedIn) {
+      console.log('⛔ Access denied: Employee login required')
       next('/login')
-      return
+    } else {
+      console.log('✅ Access granted: Employee')
+      next()
     }
-    next()
-    return
   }
-
-  // ✅ 3. Customer Only Pages
-  if (to.meta.requiresAuth) {
+  // Customer routes
+  else if (to.meta.requiresAuth) {
     if (!isLoggedIn) {
-      Swal.fire({
-        title: 'กรุณาเข้าสู่ระบบ',
-        text: 'คุณต้องเข้าสู่ระบบก่อนใช้งานฟีเจอร์นี้',
-        icon: 'warning',
-        confirmButtonColor: '#dc2626',
-        confirmButtonText: 'เข้าสู่ระบบ',
-        background: 'rgba(30, 30, 30, 0.98)',
-        color: '#ffffff',
-        timer: 3000,
-        timerProgressBar: true
-      })
+      console.log('⛔ Access denied: Customer login required')
       next('/login')
-      return
+    } else {
+      console.log('✅ Access granted: Customer')
+      next()
     }
-    next()
-    return
   }
-
-  // ✅ 4. Guest Only Pages (Login/Register)
-  if (to.meta.requiresGuest) {
-    if (isEmployee) {
+  // Guest only routes
+  else if (to.meta.requiresGuest) {
+    if (isEmployeeLoggedIn) {
+      console.log('↩️ Redirect: Already logged in as Employee')
       next('/employee/dashboard')
-      return
-    }
-    if (isLoggedIn) {
+    } else if (isLoggedIn) {
+      console.log('↩️ Redirect: Already logged in as Customer')
       next('/')
-      return
+    } else {
+      console.log('✅ Access granted: Guest')
+      next()
     }
-    next()
-    return
   }
-
-  // ✅ 5. Public Pages
-  next()
+  else {
+    console.log('✅ Access granted: Public route')
+    next()
+  }
 })
 
 export default router
