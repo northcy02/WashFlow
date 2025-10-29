@@ -1,4 +1,73 @@
-// backend/controllers/authController.js - ส่วน login
+// backend/controllers/authController.js
+
+import db from '../config/database.js';
+
+// Register
+export const register = (req, res) => {
+  console.log('');
+  console.log('📥 ========== REGISTER REQUEST ==========');
+  console.log('Request body:', { ...req.body, password: '***' });
+  
+  const { username, password, cust_fname, cust_lname, cust_tel, cust_address } = req.body;
+  
+  // ตรวจสอบข้อมูลที่จำเป็น
+  if (!username || !password || !cust_fname || !cust_lname) {
+    console.log('❌ Missing required fields');
+    return res.status(400).json({ 
+      message: 'กรุณากรอกข้อมูลที่จำเป็น',
+      required: ['username', 'password', 'cust_fname', 'cust_lname']
+    });
+  }
+
+  // ตรวจสอบว่า username ซ้ำหรือไม่
+  const checkSql = 'SELECT cust_username FROM customer WHERE cust_username = ?';
+  
+  db.query(checkSql, [username], (err, result) => {
+    if (err) {
+      console.error('❌ Database Error:', err);
+      return res.status(500).json({ 
+        message: 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล'
+      });
+    }
+
+    if (result.length > 0) {
+      console.log('⚠️ Username already exists:', username);
+      return res.status(400).json({ 
+        message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' 
+      });
+    }
+
+    // สร้างบัญชีใหม่
+    const insertSql = `
+      INSERT INTO customer (cust_username, cust_password, cust_fname, cust_lname, cust_tel, cust_address)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    
+    db.query(insertSql, [username, password, cust_fname, cust_lname, cust_tel || '', cust_address || ''], (err, result) => {
+      if (err) {
+        console.error('❌ Insert Error:', err);
+        return res.status(500).json({ 
+          message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก'
+        });
+      }
+
+      console.log('✅ Registration successful!');
+      console.log('======================================');
+      console.log('');
+
+      res.status(201).json({
+        success: true,
+        message: 'สมัครสมาชิกสำเร็จ!',
+        customer: {
+          id: result.insertId,
+          username: username
+        }
+      });
+    });
+  });
+};
+
+// Login
 export const login = (req, res) => {
   console.log('');
   console.log('📥 ========== LOGIN REQUEST ==========');
@@ -6,7 +75,6 @@ export const login = (req, res) => {
   
   const { username, password } = req.body;
   
-  // ตรวจสอบข้อมูล
   if (!username || !password) {
     console.log('❌ Missing username or password');
     return res.status(400).json({ 
@@ -15,7 +83,6 @@ export const login = (req, res) => {
     });
   }
 
-  // ค้นหา customer
   const sql = `
     SELECT 
       cust_ID,
@@ -43,7 +110,6 @@ export const login = (req, res) => {
     
     console.log('📊 Query result length:', result.length);
     
-    // ตรวจสอบว่ามี customer หรือไม่
     if (result.length === 0) {
       console.log('⚠️ Customer not found:', username);
       return res.status(401).json({ 
@@ -54,7 +120,6 @@ export const login = (req, res) => {
     const customer = result[0];
     console.log('👤 Customer found:', customer.cust_username);
 
-    // ตรวจสอบรหัสผ่าน
     if (customer.cust_password !== password) {
       console.log('⚠️ Wrong password for user:', username);
       return res.status(401).json({ 
@@ -62,7 +127,6 @@ export const login = (req, res) => {
       });
     }
 
-    // Login สำเร็จ - ✅ ส่งข้อมูลครบถ้วน
     console.log('✅ Login successful!');
     console.log('======================================');
     console.log('');
@@ -83,7 +147,116 @@ export const login = (req, res) => {
     });
   });
 };
-// เปลี่ยนรหัสผ่าน
+
+// ✅ Get Profile
+export const getProfile = (req, res) => {
+  console.log('📥 Get Profile Request');
+  
+  const customerId = req.params.id;
+  
+  if (!customerId || isNaN(customerId)) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Customer ID ไม่ถูกต้อง' 
+    });
+  }
+
+  const sql = `
+    SELECT 
+      cust_ID,
+      cust_fname,
+      cust_lname,
+      cust_tel,
+      cust_address,
+      cust_username,
+      created_at
+    FROM customer 
+    WHERE cust_ID = ?
+  `;
+  
+  db.query(sql, [customerId], (err, result) => {
+    if (err) {
+      console.error('❌ Database Error:', err);
+      return res.status(500).json({ 
+        success: false,
+        message: 'เกิดข้อผิดพลาด'
+      });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'ไม่พบข้อมูลลูกค้า' 
+      });
+    }
+
+    const customer = result[0];
+    
+    res.json({
+      success: true,
+      customer: {
+        id: customer.cust_ID,
+        username: customer.cust_username,
+        firstName: customer.cust_fname || '',
+        lastName: customer.cust_lname || '',
+        fullName: `${customer.cust_fname || ''} ${customer.cust_lname || ''}`.trim(),
+        phone: customer.cust_tel || '',
+        address: customer.cust_address || '',
+        memberSince: customer.created_at || new Date().toISOString()
+      }
+    });
+  });
+};
+
+// ✅ Update Profile
+export const updateProfile = (req, res) => {
+  console.log('📥 Update Profile Request');
+  
+  const customerId = req.params.id;
+  const { cust_fname, cust_lname, cust_tel, cust_address } = req.body;
+  
+  if (!customerId || isNaN(customerId)) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'Customer ID ไม่ถูกต้อง' 
+    });
+  }
+
+  const sql = `
+    UPDATE customer 
+    SET cust_fname = ?, 
+        cust_lname = ?, 
+        cust_tel = ?, 
+        cust_address = ?
+    WHERE cust_ID = ?
+  `;
+  
+  db.query(sql, [cust_fname, cust_lname, cust_tel, cust_address, customerId], (err, result) => {
+    if (err) {
+      console.error('❌ Update Error:', err);
+      return res.status(500).json({ 
+        success: false,
+        message: 'เกิดข้อผิดพลาดในการอัพเดทข้อมูล'
+      });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'ไม่พบข้อมูลลูกค้า' 
+      });
+    }
+
+    console.log('✅ Profile updated successfully');
+
+    res.json({
+      success: true,
+      message: 'อัพเดทข้อมูลสำเร็จ'
+    });
+  });
+};
+
+// Change Password
 export const changePassword = (req, res) => {
   console.log('📥 Change Password Request');
   
@@ -111,7 +284,6 @@ export const changePassword = (req, res) => {
     });
   }
 
-  // ตรวจสอบรหัสผ่านเดิม
   const checkSql = 'SELECT cust_password FROM customer WHERE cust_ID = ?';
   
   db.query(checkSql, [customerId], (err, result) => {
@@ -137,7 +309,6 @@ export const changePassword = (req, res) => {
       });
     }
 
-    // อัพเดทรหัสผ่านใหม่
     const updateSql = 'UPDATE customer SET cust_password = ? WHERE cust_ID = ?';
     
     db.query(updateSql, [newPassword, customerId], (err, result) => {
@@ -159,7 +330,7 @@ export const changePassword = (req, res) => {
   });
 };
 
-// ลบบัญชี
+// Delete Account
 export const deleteAccount = (req, res) => {
   console.log('📥 Delete Account Request');
   
@@ -180,7 +351,6 @@ export const deleteAccount = (req, res) => {
     });
   }
 
-  // ตรวจสอบรหัสผ่านก่อนลบ
   const checkSql = 'SELECT cust_password FROM customer WHERE cust_ID = ?';
   
   db.query(checkSql, [customerId], (err, result) => {
@@ -206,7 +376,6 @@ export const deleteAccount = (req, res) => {
       });
     }
 
-    // ลบบัญชี
     const deleteSql = 'DELETE FROM customer WHERE cust_ID = ?';
     
     db.query(deleteSql, [customerId], (err, result) => {
