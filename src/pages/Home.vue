@@ -10,7 +10,7 @@
       <section class="welcome-hero">
         <div class="container">
           <div class="welcome-content">
-            <h1>สวัสดี, <span class="user-name">{{ userName }}</span>! 👋</h1>
+            <h1>Welcome, <span class="user-name">{{ userName }}</span>! </h1>
             <p class="welcome-subtitle">ยินดีต้อนรับกลับสู่ระบบจองล้างรรถ CYBERCAR</p>
           </div>
           
@@ -124,54 +124,19 @@
             
             <div class="info-list">
               <div class="info-item">
-                <span class="icon">🚗</span>
+                <img src="/icons/serviceshot.svg"/>
                 <div class="info-text">
-                  <h4>บริการรวดเร็วทันใจ</h4>
-                  <div class="rating">⭐⭐⭐⭐⭐</div>
+                  <h4>บริการรวดเร็วทันใจ<img src="/icons/star.svg" style="margin-left: 6.5rem;"/></h4>
+                  <h4>บริการมาตราฐานระดับสูง<img src="/icons/star.svg" style="margin-left: 3.7rem;"/></h4>
+                  <h4>ความปลอดภัยและสะอาด<img src="/icons/star.svg" style="margin-left: 3.7rem;"/></h4>
+                  <h4>ราคาสมเหตุสมผล<img src="/icons/star.svg" style="margin-left: 7.2rem;"/></h4>
+                  <h4>ทีมงานมืออาชีพ<img src="/icons/star.svg" style="margin-left: 8.1rem;"/></h4>            
+                  <h4>จองง่ายผ่านแอพ<img src="/icons/star.svg" style="margin-left: 7.8rem;"/></h4>
+                  
                 </div>
               </div>
-              
-              <div class="info-item">
-                <span class="icon">💎</span>
-                <div class="info-text">
-                  <h4>บริการมาตราฐานระดับสูง</h4>
-                  <div class="rating">⭐⭐⭐⭐⭐</div>
-                </div>
               </div>
-              
-              <div class="info-item">
-                <span class="icon">⚡</span>
-                <div class="info-text">
-                  <h4>ความปลอดภัยและสะอาด</h4>
-                  <div class="rating">⭐⭐⭐⭐⭐</div>
-                </div>
               </div>
-
-              <div class="info-item">
-                <span class="icon">💰</span>
-                <div class="info-text">
-                  <h4>ราคาสมเหตุสมผล</h4>
-                  <div class="rating">⭐⭐⭐⭐⭐</div>
-                </div>
-              </div>
-
-              <div class="info-item">
-                <span class="icon">🏆</span>
-                <div class="info-text">
-                  <h4>ทีมงานมืออาชีพ</h4>
-                  <div class="rating">⭐⭐⭐⭐⭐</div>
-                </div>
-              </div>
-
-              <div class="info-item">
-                <span class="icon">📱</span>
-                <div class="info-text">
-                  <h4>จองง่ายผ่านแอพ</h4>
-                  <div class="rating">⭐⭐⭐⭐⭐</div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div class="cta-section">
             <div class="cta-lines">
@@ -204,75 +169,44 @@
       <section class="services-section">
         <div class="container">
           <div class="services-grid">
+            <!-- 1. ล้างรถ (wash) -->
             <div class="service-item" @click="goToServices">
               <div class="service-icon-svg">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 24l4-8h32l4 8M12 24v16h40V24M12 40h4m24 0h4M12 24h40"/>
-                  <circle cx="20" cy="40" r="4"/>
-                  <circle cx="44" cy="40" r="4"/>
-                  <path d="M16 24h32M20 16h24"/>
-                  <path d="M28 12l-2 4M36 12l2 4"/>
-                </svg>
-              </div>
-              <p>เคลือบสีรถ</p>
-            </div>
-            
-            <div class="service-item" @click="goToServices">
-              <div class="service-icon-svg">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 28l4-8h32l4 8M12 28v12h40V28"/>
-                  <circle cx="20" cy="40" r="3"/>
-                  <circle cx="44" cy="40" r="3"/>
-                  <path d="M20 12v8M26 8v12M32 10v10M38 8v12M44 12v8"/>
-                  <circle cx="20" cy="12" r="1.5"/>
-                  <circle cx="26" cy="8" r="1.5"/>
-                  <circle cx="32" cy="10" r="1.5"/>
-                  <circle cx="38" cy="8" r="1.5"/>
-                  <circle cx="44" cy="12" r="1.5"/>
-                </svg>
+                <img src="/icons/wash.svg" alt="ล้างรถ" />
               </div>
               <p>ล้างรถ</p>
             </div>
             
+            <!-- 2. เคลือบสีรถ (coating) -->
             <div class="service-item" @click="goToServices">
               <div class="service-icon-svg">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 26l4-8h32l4 8M12 26v14h40V26"/>
-                  <circle cx="20" cy="40" r="3"/>
-                  <circle cx="44" cy="40" r="3"/>
-                  <path d="M24 18l8-2 8 2"/>
-                  <circle cx="32" cy="14" r="3"/>
-                  <path d="M28 14l8 0M30 11l4 0"/>
-                </svg>
+                <img src="/icons/coating.svg" alt="เคลือบสีรถ" />
               </div>
-              <p>ขัดสีรถ</p>
+              <p>เคลือบสีรถ</p>
             </div>
             
+            <!-- 3. ขัดสี (polish) -->
             <div class="service-item" @click="goToServices">
               <div class="service-icon-svg">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="20" y="28" width="24" height="16" rx="2"/>
-                  <path d="M32 28V16M28 16h8M30 12h4"/>
-                  <line x1="24" y1="32" x2="40" y2="32"/>
-                  <line x1="24" y1="36" x2="40" y2="36"/>
-                  <line x1="24" y1="40" x2="40" y2="40"/>
-                  <path d="M44 36h4M44 32h6M44 40h3"/>
-                </svg>
+                <img src="/icons/polish.svg" alt="ขัดสี" />
+              </div>
+              <p>ขัดสี</p>
+            </div>
+            
+            <!-- 4. ดูดฝุ่น (vacuum) -->
+            <div class="service-item" @click="goToServices">
+              <div class="service-icon-svg">
+                <img src="/icons/vacuum.svg" alt="ดูดฝุ่น" />
               </div>
               <p>ดูดฝุ่น</p>
             </div>
             
+            <!-- 5. ซักเบาะ (interior) -->
             <div class="service-item" @click="goToServices">
               <div class="service-icon-svg">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 20l12 12M32 32l-8 8"/>
-                  <circle cx="16" cy="16" r="4"/>
-                  <circle cx="28" cy="36" r="3"/>
-                  <path d="M36 20h12v12M48 20l-8 8"/>
-                  <rect x="38" y="38" width="10" height="10" rx="1"/>
-                </svg>
+                <img src="/icons/interior.svg" alt="ซักเบาะ" />
               </div>
-              <p>อื่นๆ</p>
+              <p>ซักเบาะ</p>
             </div>
           </div>
         </div>

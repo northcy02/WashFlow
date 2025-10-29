@@ -38,18 +38,31 @@
           
           <div class="grid">
             <div 
-              v-for="vehicle in vehicles" 
+              v-for="vehicle in carTypes" 
               :key="vehicle.id"
-              class="card vehicle-card"
+              class="card"
               :class="{ selected: selectedVehicle === vehicle.id }"
-              @click="selectVehicle(vehicle.id)"
+              @click="selectedVehicle = vehicle.id"
             >
-              <div class="icon">{{ vehicle.icon }}</div>
+              <div class="car-image">
+                  <!-- ส่วนไอคอน -->
+                  <div class="flex justify-center items-center h-[90px] w-full">
+                    <img 
+                      :src="vehicle.image" 
+                      :alt="vehicle.name"
+                      class="h-[70px] w-auto object-contain"
+                    />
+                  </div>
+              </div>
+              <div class="size-badge">{{ vehicle.size }}</div>
               <h3>{{ vehicle.name }}</h3>
               <p>{{ vehicle.desc }}</p>
+
               <div v-if="selectedVehicle === vehicle.id" class="checkmark">✓</div>
             </div>
           </div>
+        
+
 
           <!-- Optional: Vehicle Plate -->
           <div class="vehicle-details" v-if="selectedVehicle">
@@ -107,8 +120,10 @@
               @click="toggleService(service.id)"
             >
               <div class="badge hot" v-if="service.hot">🔥 HOT</div>
-              <div class="badge popular" v-if="service.popular">⭐ นิยม</div>
-              <div class="icon">{{ service.icon }}</div>
+              <div class="badge popular" v-if="service.hot">⭐ นิยม</div>
+              <div class="service-image">
+              <img :src="service.image" :alt="service.name" />
+              </div>
               <h3>{{ service.name }}</h3>
               <p class="price">฿{{ service.price.toLocaleString() }}</p>
               <div class="service-meta">
@@ -228,7 +243,7 @@
         <div v-if="currentStep === 3" class="content">
           <h2>✅ ยืนยันการจอง</h2>
           
-          <!-- Booking Summary -->
+          <!-- Booking Summary --> 
           <div class="confirmation-card">
             <div class="detail-section">
               <h4>🚗 ข้อมูลรถ</h4>
@@ -395,60 +410,92 @@ const vehicleColor = ref('');
 const isLoading = ref(false);
 
 // ✅ Data
-const vehicles = [
-  { id: 'sedan', name: 'รถเก๋ง', desc: 'Sedan (4 ประตู)', icon: '🚗' },
-  { id: 'truck', name: 'กระบะ', desc: 'Pickup Truck', icon: '🚙' },
-  { id: 'suv', name: 'SUV/รถตู้', desc: '7-9 ที่นั่ง', icon: '🚐' },
-  { id: 'motor', name: 'มอเตอร์ไซค์', desc: 'Motorcycle', icon: '🏍️' }
+const carTypes = [
+  { 
+    id: 'sedan', 
+    name: 'รถเก๋ง', 
+    desc: 'Sedan', 
+    size: 'M',
+    image: '/icons/sedan.svg'
+  },
+  { 
+    id: 'pickup', 
+    name: 'รถกระบะ', 
+    desc: 'Pickup', 
+    size: 'L',
+    image: '/icons/pickup.svg'
+  },
+  { 
+    id: 'sports', 
+    name: 'รถสปอร์ต', 
+    desc: 'Sports', 
+    size: 'M',
+    image: '/icons/sports.svg'
+  },
+  { 
+    id: 'van', 
+    name: 'รถตู้', 
+    desc: 'Van', 
+    size: 'XL',
+    image: '/icons/van.svg'
+  },
+  { 
+    id: 'motorcycle', 
+    name: 'มอเตอร์ไซค์', 
+    desc: 'Bike', 
+    size: 'S',
+    image: '/icons/motorcycle.svg'
+  }
 ];
 
 const services = [
   { 
     id: 'wash', 
-    name: 'ล้างรถทั่วไป', 
+    name: 'ล้างรถ', 
+    desc: 'Basic Wash',
     price: 200, 
     time: '30 นาที', 
-    icon: '🚿',
-    hot: true,
-    popular: false
+    hot: true, 
+    image: '/icons/wash.svg'
   },
   { 
     id: 'coating', 
-    name: 'เคลือบแก้ว', 
+    name: 'เคลือบสีรถ', 
+    desc: 'Glass Coating',
     price: 150, 
     time: '15 นาที', 
-    icon: '✨',
     hot: false,
-    popular: true
+    image: '/icons/coating.svg'
   },
   { 
     id: 'polish', 
-    name: 'ขัดสีรถ', 
+    name: 'ขัดสี', 
+    desc: 'Polish',
     price: 1000, 
     time: '60 นาที', 
-    icon: '💎',
-    hot: true,
-    popular: false
+    hot: true, 
+    image: '/icons/polish.svg'
   },
   { 
     id: 'vacuum', 
-    name: 'ดูดฝุ่นภายใน', 
+    name: 'ดูดฝุ่น', 
+    desc: 'Vacuum',
     price: 80, 
     time: '20 นาที', 
-    icon: '🌪️',
     hot: false,
-    popular: true
+    image: '/icons/vacuum.svg'
   },
   { 
     id: 'interior', 
     name: 'ซักเบาะ', 
+    desc: 'Interior Cleaning',
     price: 2000, 
     time: '90 นาที', 
-    icon: '🧼',
     hot: false,
-    popular: false
+    image: '/icons/interior.svg'
   }
 ];
+
 
 // ✅ Computed
 const minDate = computed(() => {
@@ -532,10 +579,10 @@ const isTimeDisabled = (time: string) => {
   return false;
 };
 
-const getVehicleName = (id: string) => vehicles.find(v => v.id === id)?.name || '';
+const getVehicleName = (id: string) => carTypes.find(v => v.id === id)?.name || '';
 const getServiceName = (id: string) => services.find(s => s.id === id)?.name || '';
 const getServicePrice = (id: string) => services.find(s => s.id === id)?.price || 0;
-const getServiceIcon = (id: string) => services.find(s => s.id === id)?.icon || '';
+const getServiceIcon = (id: string) => services.find(s => s.id === id)?.image || '';
 
 const getDiscountReason = () => {
   if (selectedServices.value.length >= 3) return '(จอง 3 บริการขึ้นไป)';

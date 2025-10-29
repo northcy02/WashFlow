@@ -23,7 +23,7 @@
           
           <form @submit.prevent="handleLogin">
             <div class="field">
-              <label>👤 ชื่อผู้ใช้</label>
+              <label>Username</label>
               <input 
                 v-model="formData.username" 
                 type="text" 
@@ -34,7 +34,7 @@
             </div>
 
             <div class="field">
-              <label>🔒 รหัสผ่าน</label>
+              <label> Password</label>
               <div class="password-field">
                 <input 
                   v-model="formData.password" 

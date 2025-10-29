@@ -18,14 +18,7 @@
             <!-- Service 1 -->
             <div class="service-card" @click="selectService('coating')">
               <div class="service-icon">
-                <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 28l4-8h32l4 8M12 28v12h40V28M12 40h4m24 0h4" 
-                        fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="20" cy="40" r="4" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="44" cy="40" r="4" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <line x1="16" y1="28" x2="48" y2="28" stroke="currentColor" stroke-width="2"/>
-                  <path d="M20 20l4-4h16l4 4" stroke="currentColor" stroke-width="2" fill="none"/>
-                </svg>
+                <img src="/icons/coating.svg" alt="เคลือบสีรถ" />
               </div>
               <p class="service-name">เคลือบสีรถ</p>
               <p class="service-price">150.-</p>
@@ -35,19 +28,7 @@
             <!-- Service 2 -->
             <div class="service-card" @click="selectService('wash')">
               <div class="service-icon">
-                <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 28l4-8h32l4 8M12 28v12h40V28" 
-                        fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="20" cy="40" r="3.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="44" cy="40" r="3.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <path d="M20 12v8M26 8v12M32 10v10M38 8v12M44 12v8" 
-                        stroke="currentColor" stroke-width="2"/>
-                  <circle cx="20" cy="12" r="1.5" fill="currentColor"/>
-                  <circle cx="26" cy="8" r="1.5" fill="currentColor"/>
-                  <circle cx="32" cy="10" r="1.5" fill="currentColor"/>
-                  <circle cx="38" cy="8" r="1.5" fill="currentColor"/>
-                  <circle cx="44" cy="12" r="1.5" fill="currentColor"/>
-                </svg>
+                <img src="/icons/wash.svg" alt="ล้างรถ" />
               </div>
               <p class="service-name">ล้างรถ</p>
               <p class="service-price">200.-</p>
@@ -57,14 +38,7 @@
             <!-- Service 3 -->
             <div class="service-card" @click="selectService('vacuum')">
               <div class="service-icon">
-                <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="20" y="28" width="24" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <path d="M32 28V16M28 16h8M30 12h4" stroke="currentColor" stroke-width="2"/>
-                  <line x1="24" y1="32" x2="40" y2="32" stroke="currentColor" stroke-width="2"/>
-                  <line x1="24" y1="36" x2="40" y2="36" stroke="currentColor" stroke-width="2"/>
-                  <line x1="24" y1="40" x2="40" y2="40" stroke="currentColor" stroke-width="2"/>
-                  <path d="M44 36h4M44 32h6M44 40h3" stroke="currentColor" stroke-width="2"/>
-                </svg>
+                <img src="/icons/vacuum.svg" alt="ดูดฝุ่น" />
               </div>
               <p class="service-name">ดูดฝุ่น</p>
               <p class="service-price">80.-</p>
@@ -74,15 +48,7 @@
             <!-- Service 4 -->
             <div class="service-card" @click="selectService('polish')">
               <div class="service-icon">
-                <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 26l4-8h32l4 8M12 26v14h40V26" 
-                        fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="20" cy="40" r="3.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="44" cy="40" r="3.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <circle cx="32" cy="16" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-                  <path d="M28 16h8M30 13h4" stroke="currentColor" stroke-width="2"/>
-                  <path d="M24 22l8-4 8 4" fill="none" stroke="currentColor" stroke-width="2"/>
-                </svg>
+                <img src="/icons/polish.svg" alt="ขัดสีรถ" />
               </div>
               <p class="service-name">ขัดสีรถ</p>
               <p class="service-price">1,000.-</p>
@@ -92,14 +58,7 @@
             <!-- Service 5 -->
             <div class="service-card" @click="selectService('interior')">
               <div class="service-icon">
-                <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="22" y="18" width="20" height="20" rx="2" 
-                        fill="none" stroke="currentColor" stroke-width="2.5"/>
-                  <path d="M26 22h12M26 26h12M26 30h12M26 34h8" 
-                        stroke="currentColor" stroke-width="2"/>
-                  <path d="M32 18v-6M28 12h8" stroke="currentColor" stroke-width="2"/>
-                  <path d="M42 26h6M42 30h4" stroke="currentColor" stroke-width="2"/>
-                </svg>
+                <img src="/icons/interior.svg" alt="ซักเบาะ" />
               </div>
               <p class="service-name">ซักเบาะ</p>
               <p class="service-price">2,000.-</p>
