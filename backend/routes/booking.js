@@ -3,14 +3,15 @@ import express from 'express';
 import { 
   createBooking, 
   getBookingHistory,
-  cancelBooking
+  cancelBooking,
+  getAllActiveBookings  // ✅ เพิ่ม
 } from '../controllers/bookingController.js';
 
 const router = express.Router();
 
-// ✅ Routes
-router.post('/create', createBooking);           // POST /api/booking/create
-router.get('/history/:customerId', getBookingHistory); // GET /api/booking/history/:id
-router.put('/cancel/:id', cancelBooking);        // PUT /api/booking/cancel/:id
+router.post('/create', createBooking);
+router.get('/history/:customerId', getBookingHistory);
+router.put('/cancel/:id', cancelBooking);
+router.get('/all-bookings', getAllActiveBookings);  // ✅ เพิ่ม
 
 export default router;

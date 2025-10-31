@@ -1,3 +1,396 @@
+<template>
+  <div class="payment-management-page">
+    <!-- ========================================
+         HEADER
+    ======================================== -->
+    <header class="page-header">
+      <div class="container">
+        <div class="header-content">
+          <button @click="goBack" class="btn-back">← กลับ</button>
+          <div class="header-title">
+            <h1>💰 การเงิน</h1>
+            <p>รับชำระเงิน & ดูใบเสร็จ</p>
+          </div>
+          <div class="header-date">
+            {{ currentDate }}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========================================
+         REVENUE SECTION
+    ======================================== -->
+    <section class="revenue-section">
+      <div class="container">
+        <div class="revenue-grid">
+          <!-- Today Revenue -->
+          <div class="revenue-card today">
+            <div class="card-icon">💰</div>
+            <div class="card-content">
+              <h3>รายได้วันนี้</h3>
+              <div class="amount">฿{{ todayRevenue.toLocaleString() }}</div>
+              <p class="transactions">{{ todayTransactions }} รายการ</p>
+            </div>
+          </div>
+
+          <!-- Cash -->
+          <div class="revenue-card cash">
+            <div class="card-icon">💵</div>
+            <div class="card-content">
+              <h3>เงินสด</h3>
+              <div class="amount">฿{{ paymentBreakdown.cash.toLocaleString() }}</div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: getCashPercent + '%' }"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card -->
+          <div class="revenue-card card-payment">
+            <div class="card-icon">💳</div>
+            <div class="card-content">
+              <h3>บัตร</h3>
+              <div class="amount">฿{{ paymentBreakdown.card.toLocaleString() }}</div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: getCardPercent + '%' }"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- QR -->
+          <div class="revenue-card qr">
+            <div class="card-icon">📱</div>
+            <div class="card-content">
+              <h3>QR Code</h3>
+              <div class="amount">฿{{ paymentBreakdown.qr.toLocaleString() }}</div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: getQRPercent + '%' }"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         PENDING PAYMENTS
+    ======================================== -->
+    <section class="pending-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>📋 รายการรอชำระเงิน</h2>
+          <span class="badge">{{ pendingPayments.length }}</span>
+        </div>
+
+        <div class="pending-grid">
+          <!-- Empty State -->
+          <div v-if="pendingPayments.length === 0" class="empty-pending">
+            <div class="icon">📭</div>
+            <p>ไม่มีรายการรอชำระเงิน</p>
+          </div>
+
+          <!-- Pending Cards -->
+          <div 
+            v-for="booking in pendingPayments" 
+            :key="booking.booking_ID"
+            class="pending-card"
+          >
+            <div class="pending-header">
+              <span class="booking-id">#{{ booking.booking_ID }}</span>
+              <span class="booking-time">{{ formatTime(booking.booking_time) }}</span>
+            </div>
+            <div class="pending-body">
+              <div class="customer-info">
+                <strong>{{ booking.cust_fname }} {{ booking.cust_lname }}</strong>
+                <small>{{ booking.cust_tel }}</small>
+              </div>
+              <div class="service-info">
+                <p>{{ extractServices(booking.invoice_description) }}</p>
+              </div>
+              <div class="amount-info">
+                <span class="label">ยอดชำระ:</span>
+                <span class="amount">฿{{ booking.payment_amount?.toLocaleString() }}</span>
+              </div>
+            </div>
+            <div class="pending-actions">
+              <button @click="processPayment(booking)" class="btn-process">
+                💳 รับชำระเงิน
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         PAYMENT HISTORY
+    ======================================== -->
+    <section class="history-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>📜 ประวัติการชำระเงิน</h2>
+          <div class="filters">
+            <select v-model="filterMethod" @change="filterPayments">
+              <option value="">ทุกวิธีชำระ</option>
+              <option value="cash">เงินสด</option>
+              <option value="card">บัตร</option>
+              <option value="qr">QR Code</option>
+            </select>
+            <input 
+              v-model="searchInvoice" 
+              type="text" 
+              placeholder="ค้นหาเลขที่ใบเสร็จ..."
+              @input="filterPayments"
+            />
+          </div>
+        </div>
+
+        <div class="history-table">
+          <table>
+            <thead>
+              <tr>
+                <th>เลขที่ใบเสร็จ</th>
+                <th>ลูกค้า</th>
+                <th>บริการ</th>
+                <th>วิธีชำระ</th>
+                <th>ยอดเงิน</th>
+                <th>วันที่</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="filteredPayments.length === 0">
+                <td colspan="7" class="empty-table">
+                  <div class="icon">📭</div>
+                  <p>ไม่พบข้อมูล</p>
+                </td>
+              </tr>
+              <tr v-for="payment in filteredPayments" :key="payment.payment_ID">
+                <td>
+                  <span class="invoice-number">{{ payment.invoice_number }}</span>
+                </td>
+                <td>
+                  <div class="customer-cell">
+                    <strong>{{ payment.cust_fname }} {{ payment.cust_lname }}</strong>
+                    <small>{{ payment.cust_tel }}</small>
+                  </div>
+                </td>
+                <td class="service-cell">{{ extractServices(payment.invoice_description) }}</td>
+                <td>
+                  <span class="payment-method" :class="payment.payment_method">
+                    {{ getPaymentMethodText(payment.payment_method) }}
+                  </span>
+                </td>
+                <td class="amount-cell">฿{{ payment.payment_amount?.toLocaleString() }}</td>
+                <td>{{ formatDateTime(payment.payment_date) }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button @click="viewInvoice(payment)" class="btn-view" title="ดูใบเสร็จ">
+                      👁️
+                    </button>
+                    <button @click="printInvoice(payment)" class="btn-print" title="พิมพ์">
+                      🖨️
+                    </button>
+                    <button 
+                      v-if="isManager" 
+                      @click="refundPayment(payment)" 
+                      class="btn-refund"
+                      title="คืนเงิน"
+                    >
+                      ↩️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         PAYMENT MODAL
+    ======================================== -->
+    <transition name="modal">
+      <div v-if="showPaymentModal" class="modal-overlay" @click="closePaymentModal">
+        <div class="modal-content payment-modal" @click.stop>
+          <div class="modal-header">
+            <h2>💳 รับชำระเงิน</h2>
+            <button @click="closePaymentModal" class="btn-close">×</button>
+          </div>
+
+          <div class="modal-body" v-if="selectedBooking">
+            <!-- Booking Summary -->
+            <div class="booking-summary">
+              <h3>รายละเอียดการจอง #{{ selectedBooking.booking_ID }}</h3>
+              <div class="summary-row">
+                <span>ลูกค้า:</span>
+                <span>{{ selectedBooking.cust_fname }} {{ selectedBooking.cust_lname }}</span>
+              </div>
+              <div class="summary-row">
+                <span>เบอร์โทร:</span>
+                <span>{{ selectedBooking.cust_tel }}</span>
+              </div>
+              <div class="summary-row">
+                <span>บริการ:</span>
+                <span>{{ extractServices(selectedBooking.invoice_description) }}</span>
+              </div>
+              <div class="summary-row total">
+                <strong>ยอดชำระ:</strong>
+                <strong class="amount">฿{{ selectedBooking.payment_amount?.toLocaleString() }}</strong>
+              </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="payment-method-section">
+              <h3>วิธีชำระเงิน</h3>
+              <div class="payment-methods">
+                <label class="method-option" :class="{ selected: paymentForm.method === 'cash' }">
+                  <input type="radio" v-model="paymentForm.method" value="cash">
+                  <div class="method-content">
+                    <span class="method-icon">💵</span>
+                    <span class="method-label">เงินสด</span>
+                  </div>
+                </label>
+                <label class="method-option" :class="{ selected: paymentForm.method === 'card' }">
+                  <input type="radio" v-model="paymentForm.method" value="card">
+                  <div class="method-content">
+                    <span class="method-icon">💳</span>
+                    <span class="method-label">บัตร</span>
+                  </div>
+                </label>
+                <label class="method-option" :class="{ selected: paymentForm.method === 'qr' }">
+                  <input type="radio" v-model="paymentForm.method" value="qr">
+                  <div class="method-content">
+                    <span class="method-icon">📱</span>
+                    <span class="method-label">QR Code</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Cash Input -->
+            <div v-if="paymentForm.method === 'cash'" class="cash-input-section">
+              <h3>รับเงินสด</h3>
+              <div class="amount-input-wrapper">
+                <span class="currency">฿</span>
+                <input 
+                  v-model.number="paymentForm.receivedAmount" 
+                  type="number" 
+                  class="amount-input"
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div v-if="paymentForm.receivedAmount > 0" class="change-display">
+                <div class="change-row total">
+                  <span>เงินทอน:</span>
+                  <strong :class="{ negative: changeAmount < 0 }">
+                    ฿{{ changeAmount.toLocaleString() }}
+                    <span v-if="changeAmount < 0" class="warning">⚠️ ไม่เพียงพอ</span>
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button @click="closePaymentModal" class="btn-cancel">ยกเลิก</button>
+            <button 
+              @click="confirmPayment" 
+              :disabled="!canConfirmPayment || isProcessing" 
+              class="btn-confirm"
+            >
+              <span v-if="!isProcessing">✓ ยืนยันชำระเงิน</span>
+              <span v-else class="loading">
+                <span class="spinner"></span>
+                กำลังดำเนินการ...
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ========================================
+         INVOICE MODAL
+    ======================================== -->
+    <transition name="modal">
+      <div v-if="showInvoiceModal" class="modal-overlay" @click="closeInvoiceModal">
+        <div class="modal-content invoice-modal" @click.stop>
+          <div class="modal-header">
+            <h2>📄 ใบเสร็จ</h2>
+            <button @click="closeInvoiceModal" class="btn-close">×</button>
+          </div>
+
+          <div class="modal-body" v-if="selectedInvoice">
+            <div class="invoice-content">
+              <div class="invoice-header">
+                <div class="company-info">
+                  <h1>CYBERCAR</h1>
+                  <p>ศูนย์มาตราฐานทำความสะอาดรถยนต์</p>
+                  <p>123 หมู่ 16 ถนนมิตรภาพ ตำบลในเมือง อำเภอเมือง จังหวัดขอนแก่น 40002</p>
+                </div>
+                <div class="invoice-number">
+                  <h3>ใบเสร็จรับเงิน</h3>
+                  <p>{{ selectedInvoice.invoice_number }}</p>
+                </div>
+              </div>
+
+              <div class="invoice-divider"></div>
+
+              <div class="invoice-details">
+                <div class="detail-row">
+                  <span>วันที่:</span>
+                  <span>{{ formatDateTime(selectedInvoice.payment_date) }}</span>
+                </div>
+                <div class="detail-row">
+                  <span>ลูกค้า:</span>
+                  <span>{{ selectedInvoice.cust_fname }} {{ selectedInvoice.cust_lname }}</span>
+                </div>
+                <div class="detail-row">
+                  <span>เบอร์โทร:</span>
+                  <span>{{ selectedInvoice.cust_tel }}</span>
+                </div>
+              </div>
+
+              <div class="invoice-items">
+                <h4>รายการ:</h4>
+                <p>{{ selectedInvoice.invoice_description }}</p>
+              </div>
+
+              <div class="invoice-total">
+                <div class="total-row">
+                  <span>วิธีชำระ:</span>
+                  <span>{{ getPaymentMethodText(selectedInvoice.payment_method) }}</span>
+                </div>
+                <div class="total-row grand">
+                  <strong>ยอดรวมทั้งสิ้น:</strong>
+                  <strong>฿{{ selectedInvoice.payment_amount?.toLocaleString() }}</strong>
+                </div>
+              </div>
+
+              <div class="invoice-footer">
+                <p>ขอบคุณที่ใช้บริการ</p>
+                <p class="small">*** กรุณาเก็บใบเสร็จไว้เป็นหลักฐาน ***</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button @click="closeInvoiceModal" class="btn-cancel">ปิด</button>
+            <button @click="printInvoice(selectedInvoice)" class="btn-print-full">
+              🖨️ พิมพ์ใบเสร็จ
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';

@@ -6,76 +6,255 @@ import employeeRoutes from './employee.js';
 import bookingManagementRoutes from './bookingManagement.js';
 import branchRoutes from './branch.js';
 import roleRoutes from './role.js';
-import paymentRoutes from './payment.js';  // ✅ เพิ่มบรรทัดนี้
+import paymentRoutes from './payment.js';  // ✅ เพิ่ม Payment Routes
 
 const router = express.Router();
 
+// ========================================
+// ROOT - API Information
+// ========================================
 router.get('/', (req, res) => {
   res.json({ 
     message: 'WashFlow API Server',
     version: '1.0.0',
     status: 'running',
+    timestamp: new Date().toISOString(),
     endpoints: {
+      // Authentication
       auth: {
-        register: 'POST /api/auth/register',
-        login: 'POST /api/auth/login',
-        unifiedLogin: 'POST /api/auth/unified-login',
-        getProfile: 'GET /api/auth/profile/:id',
-        updateProfile: 'PUT /api/auth/profile/:id',
-        changePassword: 'PUT /api/auth/change-password/:id',
-        deleteAccount: 'DELETE /api/auth/delete/:id'
+        register: {
+          method: 'POST',
+          path: '/api/auth/register',
+          description: 'สมัครสมาชิกใหม่'
+        },
+        login: {
+          method: 'POST',
+          path: '/api/auth/login',
+          description: 'เข้าสู่ระบบลูกค้า'
+        },
+        unifiedLogin: {
+          method: 'POST',
+          path: '/api/auth/unified-login',
+          description: 'เข้าสู่ระบบรวม (ลูกค้า + พนักงาน)'
+        },
+        getProfile: {
+          method: 'GET',
+          path: '/api/auth/profile/:id',
+          description: 'ดูข้อมูลโปรไฟล์'
+        },
+        updateProfile: {
+          method: 'PUT',
+          path: '/api/auth/profile/:id',
+          description: 'แก้ไขโปรไฟล์'
+        },
+        changePassword: {
+          method: 'PUT',
+          path: '/api/auth/change-password/:id',
+          description: 'เปลี่ยนรหัสผ่าน'
+        },
+        deleteAccount: {
+          method: 'DELETE',
+          path: '/api/auth/delete/:id',
+          description: 'ลบบัญชี'
+        }
       },
+      // Booking
       booking: {
-        create: 'POST /api/booking/create',
-        history: 'GET /api/booking/history/:customerId',
-        cancel: 'PUT /api/booking/cancel/:id'
+        create: {
+          method: 'POST',
+          path: '/api/booking/create',
+          description: 'สร้างการจองใหม่'
+        },
+        history: {
+          method: 'GET',
+          path: '/api/booking/history/:customerId',
+          description: 'ประวัติการจองของลูกค้า'
+        },
+        allBookings: {
+          method: 'GET',
+          path: '/api/booking/all-bookings',
+          description: 'ดึงการจองทั้งหมด (สำหรับเช็คเวลา)'
+        },
+        checkAvailability: {
+          method: 'GET',
+          path: '/api/booking/check-availability',
+          description: 'เช็คเวลาที่ถูกจองในวันนั้น'
+        },
+        cancel: {
+          method: 'PUT',
+          path: '/api/booking/cancel/:id',
+          description: 'ยกเลิกการจอง'
+        }
       },
+      // Employee
       employee: {
-        login: 'POST /api/employee/login',
-        profile: 'GET /api/employee/profile/:id',
-        all: 'GET /api/employee/all',
-        create: 'POST /api/employee/create',
-        update: 'PUT /api/employee/update/:id',
-        delete: 'DELETE /api/employee/delete/:id'
+        login: {
+          method: 'POST',
+          path: '/api/employee/login',
+          description: 'เข้าสู่ระบบพนักงาน'
+        },
+        profile: {
+          method: 'GET',
+          path: '/api/employee/profile/:id',
+          description: 'ดูข้อมูลพนักงาน'
+        },
+        all: {
+          method: 'GET',
+          path: '/api/employee/all',
+          description: 'ดูพนักงานทั้งหมด'
+        },
+        create: {
+          method: 'POST',
+          path: '/api/employee/create',
+          description: 'เพิ่มพนักงานใหม่'
+        },
+        update: {
+          method: 'PUT',
+          path: '/api/employee/update/:id',
+          description: 'แก้ไขข้อมูลพนักงาน'
+        },
+        delete: {
+          method: 'DELETE',
+          path: '/api/employee/delete/:id',
+          description: 'ลบพนักงาน'
+        }
       },
+      // Booking Management
       management: {
-        bookings: 'GET /api/management/booking/all',
-        updateStatus: 'PUT /api/management/booking/status/:id',
-        stats: 'GET /api/management/booking/stats',
-        revenue: 'GET /api/management/booking/revenue'
+        bookings: {
+          method: 'GET',
+          path: '/api/management/booking/all',
+          description: 'ดูการจองทั้งหมด (พนักงาน)',
+          params: 'status (optional)'
+        },
+        updateStatus: {
+          method: 'PUT',
+          path: '/api/management/booking/status/:id',
+          description: 'อัพเดทสถานะการจอง'
+        },
+        stats: {
+          method: 'GET',
+          path: '/api/management/booking/stats',
+          description: 'สถิติการจอง'
+        },
+        revenue: {
+          method: 'GET',
+          path: '/api/management/booking/revenue',
+          description: 'รายได้และสถิติการชำระเงิน'
+        }
       },
+      // Payment
+      payment: {
+        all: {
+          method: 'GET',
+          path: '/api/payment/all',
+          description: 'ดูรายการชำระเงินทั้งหมด'
+        },
+        getById: {
+          method: 'GET',
+          path: '/api/payment/:id',
+          description: 'ดูข้อมูลการชำระเงินตาม ID'
+        },
+        process: {
+          method: 'POST',
+          path: '/api/payment/process',
+          description: 'รับชำระเงิน',
+          body: {
+            booking_id: 'number (required)',
+            payment_method: 'string (cash/card/qr) (required)',
+            received_amount: 'number (optional)',
+            change_amount: 'number (optional)',
+            notes: 'string (optional)',
+            employee_id: 'number (optional)'
+          }
+        },
+        refund: {
+          method: 'POST',
+          path: '/api/payment/refund',
+          description: 'คืนเงิน',
+          body: {
+            payment_id: 'number (required)',
+            employee_id: 'number (optional)'
+          }
+        }
+      },
+      // Branch
       branch: {
-        all: 'GET /api/branch/all',
-        create: 'POST /api/branch/create'
+        all: {
+          method: 'GET',
+          path: '/api/branch/all',
+          description: 'ดูสาขาทั้งหมด'
+        },
+        create: {
+          method: 'POST',
+          path: '/api/branch/create',
+          description: 'เพิ่มสาขาใหม่'
+        }
       },
+      // Role
       role: {
-        all: 'GET /api/role/all',
-        create: 'POST /api/role/create'
-      },
-      payment: {  // ✅ เพิ่ม
-        all: 'GET /api/payment/all',
-        getById: 'GET /api/payment/:id',
-        process: 'POST /api/payment/process',
-        refund: 'POST /api/payment/refund'
+        all: {
+          method: 'GET',
+          path: '/api/role/all',
+          description: 'ดูตำแหน่งทั้งหมด'
+        },
+        create: {
+          method: 'POST',
+          path: '/api/role/create',
+          description: 'เพิ่มตำแหน่งใหม่'
+        }
       }
+    },
+    // ✅ เพิ่ม Documentation
+    documentation: {
+      swagger: '/api-docs',
+      postman: 'https://documenter.getpostman.com/...'
     }
   });
 });
 
+// ========================================
+// HEALTH CHECK
+// ========================================
 router.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// ✅ Register Routes
+// ========================================
+// REGISTER ROUTES
+// ========================================
 router.use('/auth', authRoutes);
 router.use('/booking', bookingRoutes);
 router.use('/employee', employeeRoutes);
 router.use('/management/booking', bookingManagementRoutes);
 router.use('/branch', branchRoutes);
 router.use('/role', roleRoutes);
-router.use('/payment', paymentRoutes);  // ✅ เพิ่มบรรทัดนี้
+router.use('/payment', paymentRoutes);  // ✅ เพิ่ม Payment Routes
+
+// ========================================
+// 404 HANDLER
+// ========================================
+router.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'API endpoint not found',
+    requestedPath: req.originalUrl,
+    availableEndpoints: [
+      '/api/auth/*',
+      '/api/booking/*',
+      '/api/employee/*',
+      '/api/management/booking/*',
+      '/api/branch/*',
+      '/api/role/*',
+      '/api/payment/*'
+    ],
+    documentation: '/api'
+  });
+});
 
 export default router;

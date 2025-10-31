@@ -10,6 +10,92 @@ const generateInvoiceNumber = () => {
   return `INV${year}${month}${random}`;
 };
 
+// ✅ ฟังก์ชันแปลงเวลาเป็นนาที
+const timeToMinutes = (time) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// ✅ ฟังก์ชันคำนวณระยะเวลาบริการ
+const calculateServiceDuration = async (connection, services) => {
+  const [serviceTypes] = await connection.query(
+    'SELECT Type_serviceTime FROM Service_type WHERE Type_serviceName IN (?)',
+    [services]
+  );
+  
+  // สมมติว่า Type_serviceTime เป็นนาที หรือแปลงตามโครงสร้างจริง
+  const totalDuration = serviceTypes.reduce((sum, service) => {
+    return sum + (parseInt(service.Type_serviceTime) || 30);
+  }, 0);
+  
+  return totalDuration || 30; // Default 30 นาทีถ้าไม่มีข้อมูล
+};
+
+// ✅ ฟังก์ชันตรวจสอบการจองซ้ำ
+const checkBookingConflict = async (connection, branchId, bookingDate, bookingTime, duration) => {
+  console.log('🔍 Checking booking conflict...');
+  console.log(`   Branch: ${branchId}, Date: ${bookingDate}, Time: ${bookingTime}, Duration: ${duration} min`);
+  
+  const checkingStart = timeToMinutes(bookingTime);
+  const checkingEnd = checkingStart + duration;
+
+  // ดึงการจองทั้งหมดในวันเดียวกันที่ยังไม่ยกเลิก
+  const [existingBookings] = await connection.query(
+    `SELECT booking_ID, booking_date, booking_status
+     FROM booking 
+     WHERE branch_ID = ? 
+     AND DATE(booking_date) = DATE(?)
+     AND booking_status != 'cancelled'`,
+    [branchId, bookingDate]
+  );
+
+  console.log(`   Found ${existingBookings.length} existing bookings on this date`);
+
+  for (const booking of existingBookings) {
+    const bookingDateTime = new Date(booking.booking_date);
+    const hours = bookingDateTime.getHours();
+    const minutes = bookingDateTime.getMinutes();
+    const existingTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    
+    // ดึงระยะเวลาของการจองที่มีอยู่
+    const [serviceDetails] = await connection.query(
+      `SELECT sd.service_ID, st.Type_serviceTime
+       FROM service s
+       JOIN service_detail sd ON s.service_ID = sd.service_ID
+       JOIN Service_type st ON sd.service_type_ID = st.Type_serviceID
+       WHERE s.booking_ID = ?`,
+      [booking.booking_ID]
+    );
+
+    const existingDuration = serviceDetails.reduce((sum, detail) => {
+      return sum + (parseInt(detail.Type_serviceTime) || 30);
+    }, 0) || 30;
+
+    const bookingStart = timeToMinutes(existingTime);
+    const bookingEnd = bookingStart + existingDuration;
+
+    console.log(`   Existing booking: ${existingTime} (${existingDuration} min) = ${bookingStart}-${bookingEnd}`);
+    console.log(`   New booking: ${bookingTime} (${duration} min) = ${checkingStart}-${checkingEnd}`);
+
+    // ✅ ตรวจสอบการทับซ้อน (Overlap Detection)
+    const hasOverlap = (
+      (checkingStart < bookingEnd && checkingEnd > bookingStart)
+    );
+
+    if (hasOverlap) {
+      console.log('   ⛔ CONFLICT DETECTED!');
+      return {
+        conflict: true,
+        conflictWith: existingTime,
+        message: `ช่วงเวลา ${bookingTime} - ${String(Math.floor(checkingEnd/60)).padStart(2,'0')}:${String(checkingEnd%60).padStart(2,'0')} มีการจองแล้ว (ทับกับการจอง ${existingTime})`
+      };
+    }
+  }
+
+  console.log('   ✅ No conflict found');
+  return { conflict: false };
+};
+
 // ✅ สร้างการจอง (ใช้ Promise Pool)
 export const createBooking = async (req, res) => {
   console.log('');
@@ -21,6 +107,7 @@ export const createBooking = async (req, res) => {
     branch_id,
     booking_date,
     booking_time,
+    duration, // ✅ เพิ่มรับ duration จาก frontend
     vehicle_type,
     vehicle_plate = null,
     vehicle_color = null,
@@ -39,7 +126,6 @@ export const createBooking = async (req, res) => {
     });
   }
 
-  // ✅ ใช้ Promise Pool
   const promisePool = db.promise();
   let connection;
   
@@ -47,6 +133,32 @@ export const createBooking = async (req, res) => {
     connection = await promisePool.getConnection();
     await connection.beginTransaction();
     console.log('🔄 Transaction Started');
+
+    // ✅ คำนวณระยะเวลาบริการ (ถ้าไม่ส่งมาจาก frontend)
+    const serviceDuration = duration || await calculateServiceDuration(connection, services);
+    console.log(`⏱️ Total service duration: ${serviceDuration} minutes`);
+
+    // ✅ ตรวจสอบการจองซ้ำ
+    const conflictCheck = await checkBookingConflict(
+      connection,
+      branch_id,
+      booking_date,
+      booking_time,
+      serviceDuration
+    );
+
+    if (conflictCheck.conflict) {
+      await connection.rollback();
+      console.log('❌ Booking conflict detected - Transaction rolled back');
+      console.log('======================================');
+      
+      return res.status(409).json({
+        success: false,
+        message: conflictCheck.message,
+        conflictWith: conflictCheck.conflictWith,
+        error: 'BOOKING_CONFLICT'
+      });
+    }
 
     // 1️⃣ หา/สร้าง vehicle_type
     console.log('1️⃣ Checking vehicle_type:', vehicle_type);
@@ -179,7 +291,8 @@ export const createBooking = async (req, res) => {
         id: bookingId,
         invoice_number: invoiceNumber,
         booking_date: bookingDateTime,
-        total_amount
+        total_amount,
+        duration: serviceDuration
       }
     });
 
@@ -200,6 +313,68 @@ export const createBooking = async (req, res) => {
     if (connection) {
       connection.release();
     }
+  }
+};
+
+// ✅ ดึงข้อมูลการจองทั้งหมด (สำหรับ Calendar)
+export const getAllActiveBookings = async (req, res) => {
+  try {
+    const promisePool = db.promise();
+    
+    const [bookings] = await promisePool.query(
+      `SELECT 
+        b.booking_ID,
+        b.booking_date,
+        b.booking_status
+       FROM booking b
+       WHERE b.booking_status != 'cancelled'
+       AND DATE(b.booking_date) >= CURDATE()
+       ORDER BY b.booking_date`
+    );
+
+    // แปลง booking_date เป็น date + time + duration
+    const bookingsWithDetails = await Promise.all(
+      bookings.map(async (booking) => {
+        const bookingDateTime = new Date(booking.booking_date);
+        const hours = bookingDateTime.getHours();
+        const minutes = bookingDateTime.getMinutes();
+        const bookingTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        
+        const dateOnly = bookingDateTime.toISOString().split('T')[0];
+
+        // ดึงระยะเวลาของบริการ
+        const [serviceDetails] = await promisePool.query(
+          `SELECT sd.service_ID, st.Type_serviceTime
+           FROM service s
+           JOIN service_detail sd ON s.service_ID = sd.service_ID
+           JOIN Service_type st ON sd.service_type_ID = st.Type_serviceID
+           WHERE s.booking_ID = ?`,
+          [booking.booking_ID]
+        );
+
+        const duration = serviceDetails.reduce((sum, detail) => {
+          return sum + (parseInt(detail.Type_serviceTime) || 30);
+        }, 0) || 30;
+
+        return {
+          booking_date: dateOnly,
+          booking_time: bookingTime,
+          duration: duration
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      bookings: bookingsWithDetails
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching active bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'ไม่สามารถดึงข้อมูลการจองได้'
+    });
   }
 };
 

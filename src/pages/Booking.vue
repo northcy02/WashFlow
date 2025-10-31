@@ -73,7 +73,7 @@
 
         <!-- Step 2: Services + Date/Time -->
         <div v-if="currentStep === 2" class="content">
-          <h2>✨ เลือกบริการล้างรถ</h2>
+          <h2>เลือกบริการล้างรถ</h2>
           
           <div class="vehicle-price-info">
             <div class="info-content">
@@ -103,14 +103,14 @@
               <h3>{{ service.name }}</h3>
               <p class="price">฿{{ service.price.toLocaleString() }}</p>
               <div class="service-meta">
-                <small>⏱️ {{ service.time }}</small>
+                <small>{{ service.time }}</small>
               </div>
               <div v-if="selectedServices.includes(service.id)" class="checkmark">✓</div>
             </div>
           </div>
 
           <div v-if="selectedServices.length > 0" class="selected-services">
-            <h4>🛒 บริการที่เลือก ({{ selectedServices.length }})</h4>
+            <h4>บริการที่เลือก ({{ selectedServices.length }})</h4>
             <div class="service-tags">
               <span 
                 v-for="id in selectedServices" 
@@ -125,7 +125,7 @@
           </div>
 
           <div class="datetime-section">
-            <h3>📅 เลือกวันที่และเวลา</h3>
+            <h3>เลือกวันที่และเวลา</h3>
             
             <div class="datetime-picker">
               
@@ -152,10 +152,10 @@
               </div>
             
               <div v-if="selectedDate" class="time-slots-container">
-                <h4>เลือกเวลาสำหรับวันที่ {{ new Date(selectedDate).toLocaleDateString('th-TH', { day:'numeric', month:'long' }) }}</h4>
+                <h4>เลือกเวลาสำหรับวันที่ {{ formatDateForDisplay(selectedDate) }}</h4>
                 
                 <div v-if="totalServiceDuration > 0" class="total-duration-info">
-                  ⏳ เวลารวมประมาณ: <strong>{{ totalServiceDuration }} นาที</strong> (ใช้ {{ slotsNeeded }} ช่องเวลา)
+                  เวลารวมประมาณ: <strong>{{ totalServiceDuration }} นาที</strong> (ใช้ {{ slotsNeeded }} ช่องเวลา)
                 </div>
 
                 <div class="time-slots-grid">
@@ -170,7 +170,7 @@
                     <span class="time-text">{{ time }}</span>
                   </button>
                 </div>
-                <small class="service-hours-note">🕐 เปิดบริการ 09:00 - 18:00 น.</small>
+                <small class="service-hours-note">เปิดบริการ 09:00 - 18:00 น.</small>
               </div>
             </div>
 
@@ -184,7 +184,7 @@
           </div>
 
           <div v-if="selectedServices.length > 0" class="summary enhanced">
-            <h4>💰 สรุปค่าใช้จ่าย</h4>
+            <h4>สรุปค่าใช้จ่าย</h4>
             
             <div class="summary-items">
               <div class="summary-item base-price-item">
@@ -208,7 +208,7 @@
             </div>
             
             <div v-if="discount > 0" class="row discount">
-              <span>🎉 ส่วนลด {{ discountPercent }}% {{ getDiscountReason() }}</span>
+              <span>ส่วนลด {{ discountPercent }}% {{ getDiscountReason() }}</span>
               <span>-฿{{ discount.toLocaleString() }}</span>
             </div>
             
@@ -232,7 +232,7 @@
           
           <div class="confirmation-card">
             <div class="detail-section">
-              <h4>🚗 ข้อมูลรถ</h4>
+              <h4>ข้อมูลรถ</h4>
               <div class="detail-row">
                 <label>ประเภทรถ</label>
                 <span class="value">{{ getVehicleName(selectedVehicle) }}</span>
@@ -255,7 +255,7 @@
             <div class="divider"></div>
 
             <div class="detail-section">
-              <h4>✨ บริการที่เลือก</h4>
+              <h4>บริการที่เลือก</h4>
               <div class="services-list">
                 <div v-for="id in selectedServices" :key="id" class="service-item">
                   <span class="service-name">
@@ -269,7 +269,7 @@
             <div class="divider"></div>
 
             <div class="detail-section">
-              <h4>📅 วันที่และเวลา</h4>
+              <h4>วันที่และเวลา</h4>
               <div class="datetime-display">
                 <div class="datetime-value">{{ formatSelectedDateTime }}</div>
               </div>
@@ -278,7 +278,7 @@
             <div class="divider"></div>
 
             <div class="detail-section">
-              <h4>💰 สรุปค่าใช้จ่าย</h4>
+              <h4>สรุปค่าใช้จ่าย</h4>
               <div class="price-summary">
                 <div class="price-row base">
                   <span>{{ getVehicleName(selectedVehicle) }} (พื้นฐาน)</span>
@@ -305,7 +305,7 @@
           </div>
 
           <div class="payment-section">
-            <h3>💳 เลือกวิธีชำระเงิน</h3>
+            <h3>เลือกวิธีชำระเงิน</h3>
             <div class="payment-grid">
               <label class="payment-option" :class="{ selected: paymentMethod === 'cash' }">
                 <input type="radio" v-model="paymentMethod" value="cash">
@@ -359,7 +359,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Navigator from '../components/Navigator.vue';
 import Swal from 'sweetalert2';
@@ -379,6 +379,9 @@ const vehiclePlate = ref('');
 const vehicleColor = ref('');
 const isLoading = ref(false);
 const displayMonth = ref(new Date());
+
+// ✅ ข้อมูลการจองที่มีอยู่แล้ว (ดึงจาก API)
+const bookedSlots = ref<Array<{ booking_date: string; booking_time: string; duration: number }>>([]);
 
 const carTypes = [
   { id: 'sedan', name: 'รถเก๋ง', desc: 'Sedan', size: 'M', price: 300, image: '/icons/sedan.svg' },
@@ -402,18 +405,23 @@ const availableTimes = [
   '17:00', '17:30', '18:00'
 ];
 
-const bookedSlots = ref([
-  { startTime: '10:30', duration: 60 },
-  { startTime: '14:00', duration: 45 },
-]);
-
+// ✅ Computed Properties
 const formatSelectedDateTime = computed(() => {
   if (!selectedDate.value || !selectedTime.value) return '-';
-  const date = new Date(selectedDate.value);
-  const thaiDate = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+  
+  // ✅ แก้ไข: แยก year-month-day แล้วสร้าง Date ใหม่เพื่อป้องกัน timezone issue
+  const [year, month, day] = selectedDate.value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  
+  const thaiDate = date.toLocaleDateString('th-TH', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    weekday: 'long' 
+  });
+  
   return `${thaiDate} เวลา ${selectedTime.value} น.`;
 });
-
 const subtotal = computed(() => {
   const vehicleBasePrice = getVehicleBasePrice(selectedVehicle.value);
   const servicesTotal = selectedServices.value.reduce((sum, id) => sum + (getServicePrice(id) || 0), 0);
@@ -447,6 +455,7 @@ const calendarHeader = computed(() => {
   return displayMonth.value.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
 });
 
+// ✅ คำนวณระยะเวลารวมของบริการที่เลือก (นาที)
 const totalServiceDuration = computed(() => {
   if (selectedServices.value.length === 0) return 0;
   return selectedServices.value.reduce((total, serviceId) => {
@@ -455,15 +464,119 @@ const totalServiceDuration = computed(() => {
   }, 0);
 });
 
+// ✅ จำนวนช่องเวลาที่ต้องใช้ (30 นาที = 1 slot)
 const slotsNeeded = computed(() => {
   if (totalServiceDuration.value === 0) return 1;
   return Math.ceil(totalServiceDuration.value / 30);
 });
 
-const selectVehicle = (id: string) => {
-  selectedVehicle.value = id;
+// ✅ ฟังก์ชันแปลงเวลาเป็นนาที (09:00 → 540)
+const timeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
 };
 
+// ✅ ฟังก์ชันเพิ่มนาทีกับเวลา (09:00 + 45 → 09:45)
+const addMinutesToTime = (time: string, minutes: number): string => {
+  const totalMinutes = timeToMinutes(time) + minutes;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+};
+
+// ✅ ตรวจสอบว่าเวลานี้ถูกจองไปแล้วหรือทับกับเวลาจองอื่นหรือไม่
+const isTimeDisabled = (time: string): boolean => {
+  if (!selectedDate.value) return false;
+
+  const checkingTimeInMinutes = timeToMinutes(time);
+  const selectedDateStr = selectedDate.value;
+
+  console.log(`\n🔍 ตรวจสอบเวลา ${time} สำหรับวันที่ ${selectedDateStr}`);
+
+  // 1️⃣ ตรวจสอบว่าเวลานี้อยู่ในช่วงที่มีการจองแล้วหรือไม่
+  for (const booking of bookedSlots.value) {
+    if (booking.booking_date !== selectedDateStr) continue;
+
+    const bookingStart = timeToMinutes(booking.booking_time);
+    const bookingEnd = bookingStart + booking.duration;
+
+    console.log(`   📌 มีการจอง: ${booking.booking_time} (${booking.duration} นาที) = ${bookingStart}-${bookingEnd} นาที`);
+
+    // ✅ ถ้าเวลาที่เช็คอยู่ในช่วงที่ถูกจองไปแล้ว
+    if (checkingTimeInMinutes >= bookingStart && checkingTimeInMinutes < bookingEnd) {
+      console.log(`   ⛔ ${time} อยู่ในช่วงที่ถูกจอง!`);
+      return true;
+    }
+  }
+
+  // 2️⃣ ตรวจสอบว่าถ้าเลือกเวลานี้ จะทับกับการจองอื่นหรือไม่
+  const requiredDuration = totalServiceDuration.value || 30;
+  const selectionEnd = checkingTimeInMinutes + requiredDuration;
+
+  console.log(`   ⏱️ ต้องการใช้เวลา ${requiredDuration} นาที (${checkingTimeInMinutes}-${selectionEnd})`);
+
+  for (const booking of bookedSlots.value) {
+    if (booking.booking_date !== selectedDateStr) continue;
+
+    const bookingStart = timeToMinutes(booking.booking_time);
+    const bookingEnd = bookingStart + booking.duration;
+
+    // ✅ ตรวจสอบการทับซ้อน (Overlap Detection)
+    const hasOverlap = (
+      (checkingTimeInMinutes < bookingEnd && selectionEnd > bookingStart)
+    );
+
+    if (hasOverlap) {
+      console.log(`   ⛔ ${time} จะทับกับการจอง ${booking.booking_time}!`);
+      return true;
+    }
+  }
+
+  // 3️⃣ ตรวจสอบเวลาปิดร้าน
+  const closingTime = timeToMinutes('18:00');
+  if (selectionEnd > closingTime) {
+    console.log(`   ⛔ ${time} เกินเวลาปิดร้าน (18:00)!`);
+    return true;
+  }
+
+  // 4️⃣ ตรวจสอบเวลาที่ผ่านไปแล้ว (สำหรับวันนี้)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const [y, m, d] = selectedDate.value.split('-').map(Number);
+  const selected = new Date(y, m - 1, d);
+  selected.setHours(0, 0, 0, 0);
+
+  if (selected.getTime() === today.getTime()) {
+    const now = new Date();
+    const [h, min] = time.split(':').map(Number);
+    const slotTime = new Date();
+    slotTime.setHours(h, min, 0, 0);
+    
+    if (slotTime <= now) {
+      console.log(`   ⛔ ${time} เวลาผ่านไปแล้ว!`);
+      return true;
+    }
+  }
+
+  console.log(`   ✅ ${time} ว่าง - จองได้!`);
+  return false;
+};
+
+// ✅ ตรวจสอบว่าเวลานี้ถูกบล็อกโดยการเลือกของเราหรือไม่ (แสดง "จองต่อ...")
+const isBlockedByCurrentSelection = (time: string): boolean => {
+  if (!selectedTime.value || totalServiceDuration.value <= 30) {
+    return false;
+  }
+
+  const selectedIndex = availableTimes.indexOf(selectedTime.value);
+  const checkingIndex = availableTimes.indexOf(time);
+  
+  // ช่องเวลาที่อยู่ในช่วงที่เราจอง (แต่ไม่ใช่ช่องแรก)
+  return checkingIndex > selectedIndex && checkingIndex < selectedIndex + slotsNeeded.value;
+};
+
+// ✅ เมื่อเลือกบริการใหม่ ให้รีเซ็ตเวลา
 const toggleService = (id: string) => {
   const index = selectedServices.value.indexOf(id);
   if (index > -1) {
@@ -471,66 +584,13 @@ const toggleService = (id: string) => {
   } else {
     selectedServices.value.push(id);
   }
+  // รีเซ็ตเวลาเมื่อเปลี่ยนบริการ
   selectedTime.value = '';
 };
 
-const timeToMinutes = (t: string) => {
-  const [hours, minutes] = t.split(':').map(Number);
-  return hours * 60 + minutes;
-};
-
-const isTimeDisabled = (time: string): boolean => {
-  const checkingTimeInMinutes = timeToMinutes(time);
-
-  // 1. Check against already booked slots
-  for (const booking of bookedSlots.value) {
-    const bookingStart = timeToMinutes(booking.startTime);
-    const bookingEnd = bookingStart + booking.duration;
-    if (checkingTimeInMinutes >= bookingStart && checkingTimeInMinutes < bookingEnd) {
-      return true;
-    }
-  }
-  
-  // 2. Check if selecting this time would cause an overlap with a future booking
-  const requiredDuration = totalServiceDuration.value;
-  if (requiredDuration > 0) {
-      const selectionEnd = checkingTimeInMinutes + requiredDuration;
-      for (const booking of bookedSlots.value) {
-        const bookingStart = timeToMinutes(booking.startTime);
-        if (checkingTimeInMinutes < bookingStart && selectionEnd > bookingStart) {
-            return true;
-        }
-      }
-  }
-
-  // 3. Check if time slot is in the past for today's date
-  if (selectedDate.value) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selected = new Date(selectedDate.value);
-    selected.setHours(0, 0, 0, 0);
-
-    if (selected.getTime() === today.getTime()) {
-      const now = new Date();
-      const [hours, minutes] = time.split(':').map(Number);
-      const slotTime = new Date();
-      slotTime.setHours(hours, minutes, 0, 0);
-      if (slotTime < now) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-};
-
-const isBlockedByCurrentSelection = (time: string): boolean => {
-  if (!selectedTime.value || totalServiceDuration.value <= 30) {
-    return false;
-  }
-  const selectedIndex = availableTimes.indexOf(selectedTime.value);
-  const checkingIndex = availableTimes.indexOf(time);
-  return checkingIndex > selectedIndex && checkingIndex < selectedIndex + slotsNeeded.value;
+// ✅ Helper Functions
+const selectVehicle = (id: string) => {
+  selectedVehicle.value = id;
 };
 
 const getVehicleName = (id: string) => carTypes.find(v => v.id === id)?.name || '';
@@ -550,25 +610,59 @@ const getDiscountReason = () => {
 
 const selectDateFromCalendar = (day: Date | null) => {
   if (!day || isPastDate(day)) return;
-  selectedDate.value = day.toISOString().split('T')[0];
+
+  // ✅ แก้ไข: ใช้ toISOString().split('T')[0] เพื่อให้ได้ YYYY-MM-DD ที่ถูกต้อง
+  const localDate = new Date(day.getTime() - (day.getTimezoneOffset() * 60000));
+  selectedDate.value = localDate.toISOString().split('T')[0];
   selectedTime.value = '';
+  
+  console.log('📅 เลือกวันที่:', selectedDate.value);
+  console.log('📅 Day object:', day);
+  console.log('📅 ข้อมูลการจองวันนี้:', bookedSlots.value.filter(b => b.booking_date === selectedDate.value));
 };
 
 const changeMonth = (offset: number) => {
   const newMonth = new Date(displayMonth.value);
   newMonth.setMonth(newMonth.getMonth() + offset);
   displayMonth.value = newMonth;
-}
+};
 
-const isSelectedDate = (day: Date | null) => day?.toISOString().split('T')[0] === selectedDate.value;
+const formatDateForDisplay = (dateStr: string): string => {
+  if (!dateStr) return '-';
+  
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  
+  return date.toLocaleDateString('th-TH', { 
+    day: 'numeric', 
+    month: 'long' 
+  });
+};
+
+const isSelectedDate = (day: Date | null) => {
+  if (!day) return false;
+  
+  // ✅ แก้ไข: ใช้วิธีเดียวกับ selectDateFromCalendar
+  const localDate = new Date(day.getTime() - (day.getTimezoneOffset() * 60000));
+  const dayStr = localDate.toISOString().split('T')[0];
+  
+  return dayStr === selectedDate.value;
+};
+
 const isToday = (day: Date | null) => day?.toDateString() === new Date().toDateString();
 
 const isPastDate = (day: Date | null) => {
-    if (!day) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return day < today;
-}
+  if (!day) return false;
+  
+  // ✅ แก้ไข: เปรียบเทียบเฉพาะวันที่ ไม่สนเวลา
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const checkDay = new Date(day);
+  checkDay.setHours(0, 0, 0, 0);
+  
+  return checkDay < today;
+};
 
 const goToStep1 = () => { currentStep.value = 1; };
 const goToStep2 = () => {
@@ -601,17 +695,72 @@ const showTerms = () => {
   });
 };
 
+// ✅ ดึงข้อมูลการจองที่มีอยู่จาก API
+const fetchBookedSlots = async () => {
+  try {
+    console.log('🔄 กำลังโหลดข้อมูลการจอง...');
+    const response = await axios.get('http://localhost:3000/api/booking/all-bookings');
+    
+    if (response.data.success) {
+      bookedSlots.value = response.data.bookings.map((booking: any) => ({
+        booking_date: booking.booking_date,
+        booking_time: booking.booking_time,
+        duration: booking.duration
+      }));
+      
+      console.log('✅ โหลดข้อมูลสำเร็จ:', bookedSlots.value.length, 'รายการ');
+      console.log('📊 รายการจอง:', JSON.stringify(bookedSlots.value, null, 2));
+    }
+  } catch (error) {
+    console.error('❌ เกิดข้อผิดพลาดในการโหลดข้อมูล:', error);
+  }
+};
+
 const confirmBooking = async () => {
   try {
     isLoading.value = true;
+    
     const userStr = localStorage.getItem('user');
     if (!userStr) {
-      Swal.fire({ title: 'กรุณาเข้าสู่ระบบ', icon: 'warning', confirmButtonColor: '#dc2626' });
+      Swal.fire({ 
+        title: 'กรุณาเข้าสู่ระบบ', 
+        icon: 'warning', 
+        confirmButtonColor: '#dc2626' 
+      });
       router.push('/login');
       return;
     }
     const user = JSON.parse(userStr);
 
+    // ✅ ตรวจสอบอีกครั้งก่อนส่ง (Double-check)
+    console.log('🔍 ตรวจสอบการจองซ้ำก่อนส่ง API...');
+    const checkTime = timeToMinutes(selectedTime.value);
+    const checkEnd = checkTime + totalServiceDuration.value;
+    
+    for (const booking of bookedSlots.value) {
+      if (booking.booking_date !== selectedDate.value) continue;
+      
+      const bStart = timeToMinutes(booking.booking_time);
+      const bEnd = bStart + booking.duration;
+      
+      if (
+        (checkTime < bEnd && checkEnd > bStart) ||
+        (checkTime >= bStart && checkTime < bEnd)
+      ) {
+        console.log('⛔ พบการจองซ้ำ!');
+        await fetchBookedSlots(); // โหลดข้อมูลใหม่
+        Swal.fire({
+          title: '⚠️ ช่วงเวลานี้ไม่ว่าง',
+          text: 'มีผู้อื่นจองไปก่อนแล้ว กรุณาเลือกเวลาใหม่',
+          icon: 'warning',
+          confirmButtonColor: '#dc2626'
+        });
+        isLoading.value = false;
+        return;
+      }
+    }
+
+    // ✅ ส่งข้อมูลไปยัง API
     const response = await axios.post('http://localhost:3000/api/booking/create', {
       customer_id: user.id,
       branch_id: 1,
@@ -628,9 +777,24 @@ const confirmBooking = async () => {
     });
 
     if (response.data.success) {
+      // ✅ อัพเดต bookedSlots
+      bookedSlots.value.push({
+        booking_date: selectedDate.value,
+        booking_time: selectedTime.value,
+        duration: totalServiceDuration.value
+      });
+
       Swal.fire({
         title: '🎉 จองสำเร็จ!',
-        html: `<p>รหัสการจองของคุณคือ <strong>#${response.data.booking.id}</strong></p><p>กรุณามาตรงเวลา ${formatSelectedDateTime.value}</p>`,
+        html: `
+          <div style="padding: 1rem;">
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+              รหัสการจอง: <strong>#${response.data.booking.id}</strong>
+            </p>
+            <p style="margin-bottom: 0.5rem;">📅 ${formatSelectedDateTime.value}</p>
+            <p style="color: #10b981;">⏱️ ใช้เวลาประมาณ ${totalServiceDuration.value} นาที</p>
+          </div>
+        `,
         icon: 'success',
         confirmButtonText: 'ดูประวัติการจอง',
         confirmButtonColor: '#dc2626',
@@ -648,9 +812,19 @@ const confirmBooking = async () => {
       });
     }
   } catch (error: any) {
+    console.error('❌ Error:', error);
+    
+    // ✅ แสดงข้อความตามประเภทของ error
+    let errorMessage = 'ไม่สามารถจองบริการได้';
+    
+    if (error.response?.status === 409) {
+      errorMessage = error.response.data.message || 'ช่วงเวลานี้มีการจองแล้ว กรุณาเลือกเวลาใหม่';
+      await fetchBookedSlots(); // โหลดข้อมูลใหม่
+    }
+    
     Swal.fire({
       title: 'เกิดข้อผิดพลาด',
-      text: error.response?.data?.message || 'ไม่สามารถจองบริการได้',
+      text: errorMessage,
       icon: 'error',
       confirmButtonColor: '#dc2626',
       background: 'rgba(30, 30, 30, 0.98)',
@@ -660,6 +834,12 @@ const confirmBooking = async () => {
     isLoading.value = false;
   }
 };
+
+// ✅ เรียกใช้เมื่อโหลดหน้า
+onMounted(() => {
+  fetchBookedSlots();
+});
+
 </script>
 
 <style scoped>
