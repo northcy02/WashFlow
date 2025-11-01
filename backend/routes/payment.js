@@ -10,31 +10,31 @@ const router = express.Router();
 router.get('/all', (req, res) => {
   console.log('📥 GET /api/payment/all');
 
-  const sql = `
-    SELECT 
-      p.payment_ID,
-      p.payment_amount,
-      p.payment_date,
-      p.payment_method,
-      p.booking_ID,
-      i.invoice_ID,
-      i.invoice_number,
-      i.invoice_description,
-      i.invoice_date,
-      c.cust_ID,
-      c.cust_fname,
-      c.cust_lname,
-      c.cust_tel,
-      b.booking_status,
-      b.booking_date
-    FROM payment p
-    LEFT JOIN invoice i ON p.payment_ID = i.payment_ID
-    LEFT JOIN booking b ON p.booking_ID = b.booking_ID
-    LEFT JOIN customer c ON b.customer_cust_ID = c.cust_ID
-    WHERE p.payment_method IS NOT NULL
-    ORDER BY p.payment_date DESC
-    LIMIT 100
-  `;
+const sql = `
+  SELECT 
+    p.payment_ID,
+    p.payment_amount,
+    p.payment_date,
+    p.payment_method,
+    p.booking_ID,
+    r.receipt_ID,           -- เปลี่ยนจาก invoice_ID
+    r.receipt_number,       -- เปลี่ยนจาก invoice_number
+    r.receipt_description,  -- เปลี่ยนจาก invoice_description
+    r.receipt_date,         -- เปลี่ยนจาก invoice_date
+    c.cust_ID,
+    c.cust_fname,
+    c.cust_lname,
+    c.cust_tel,
+    b.booking_status,
+    b.booking_date
+  FROM payment p
+  LEFT JOIN receipt r ON p.payment_ID = r.payment_ID  -- เปลี่ยนจาก invoice
+  LEFT JOIN booking b ON p.booking_ID = b.booking_ID
+  LEFT JOIN customer c ON b.cust_ID = c.cust_ID       -- แก้ foreign key
+  WHERE p.payment_method IS NOT NULL
+  ORDER BY p.payment_date DESC
+  LIMIT 100
+`;
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -129,32 +129,33 @@ router.post('/process', (req, res) => {
     );
 
     // Get invoice number
-    const getInvoiceSql = `
-      SELECT i.invoice_number 
-      FROM invoice i 
-      LEFT JOIN payment p ON i.payment_ID = p.payment_ID 
-      WHERE p.booking_ID = ?
-    `;
+  // Process Payment
+const getReceiptSql = `  -- เปลี่ยนชื่อตัวแปร
+  SELECT r.receipt_number 
+  FROM receipt r 
+  LEFT JOIN payment p ON r.payment_ID = p.payment_ID 
+  WHERE p.booking_ID = ?
+`;
 
-    db.query(getInvoiceSql, [booking_id], (err, invoiceResult) => {
-      if (err) {
-        console.error('❌ Invoice Query Error:', err);
-        return res.json({ 
-          success: true, 
-          invoice_number: 'N/A',
-          message: 'ชำระเงินสำเร็จ'
-        });
-      }
-
-      const invoiceNumber = invoiceResult[0]?.invoice_number || 'N/A';
-      console.log('✅ Payment processed. Invoice:', invoiceNumber);
-
-      res.json({ 
-        success: true, 
-        invoice_number: invoiceNumber,
-        message: 'ชำระเงินสำเร็จ'
-      });
+db.query(getReceiptSql, [booking_id], (err, receiptResult) => {
+  if (err) {
+    console.error('❌ Receipt Query Error:', err);
+    return res.json({ 
+      success: true, 
+      receipt_number: 'N/A',  // เปลี่ยนจาก invoice_number
+      message: 'ชำระเงินสำเร็จ'
     });
+  }
+
+  const receiptNumber = receiptResult[0]?.receipt_number || 'N/A';
+  console.log('✅ Payment processed. Receipt:', receiptNumber);
+
+  res.json({ 
+    success: true, 
+    receipt_number: receiptNumber,
+    message: 'ชำระเงินสำเร็จ'
+  });
+});
   });
 });
 

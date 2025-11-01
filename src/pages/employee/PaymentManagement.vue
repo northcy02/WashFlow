@@ -106,7 +106,7 @@
                 <small>{{ booking.cust_tel }}</small>
               </div>
               <div class="service-info">
-                <p>{{ extractServices(booking.invoice_description) }}</p>
+                <p>{{ extractServices(booking.receipt_description) }}</p>
               </div>
               <div class="amount-info">
                 <span class="label">ยอดชำระ:</span>
@@ -138,7 +138,7 @@
               <option value="qr">QR Code</option>
             </select>
             <input 
-              v-model="searchInvoice" 
+              v-model="searchreceipt" 
               type="text" 
               placeholder="ค้นหาเลขที่ใบเสร็จ..."
               @input="filterPayments"
@@ -168,7 +168,7 @@
               </tr>
               <tr v-for="payment in filteredPayments" :key="payment.payment_ID">
                 <td>
-                  <span class="invoice-number">{{ payment.invoice_number }}</span>
+                  <span class="receipt-number">{{ payment.receipt_number }}</span>
                 </td>
                 <td>
                   <div class="customer-cell">
@@ -176,7 +176,7 @@
                     <small>{{ payment.cust_tel }}</small>
                   </div>
                 </td>
-                <td class="service-cell">{{ extractServices(payment.invoice_description) }}</td>
+                <td class="service-cell">{{ extractServices(payment.receipt_description) }}</td>
                 <td>
                   <span class="payment-method" :class="payment.payment_method">
                     {{ getPaymentMethodText(payment.payment_method) }}
@@ -186,10 +186,10 @@
                 <td>{{ formatDateTime(payment.payment_date) }}</td>
                 <td>
                   <div class="action-buttons">
-                    <button @click="viewInvoice(payment)" class="btn-view" title="ดูใบเสร็จ">
+                    <button @click="viewreceipt(payment)" class="btn-view" title="ดูใบเสร็จ">
                       👁️
                     </button>
-                    <button @click="printInvoice(payment)" class="btn-print" title="พิมพ์">
+                    <button @click="printreceipt(payment)" class="btn-print" title="พิมพ์">
                       🖨️
                     </button>
                     <button 
@@ -234,7 +234,7 @@
               </div>
               <div class="summary-row">
                 <span>บริการ:</span>
-                <span>{{ extractServices(selectedBooking.invoice_description) }}</span>
+                <span>{{ extractServices(selectedBooking.receipt_description) }}</span>
               </div>
               <div class="summary-row total">
                 <strong>ยอดชำระ:</strong>
@@ -315,64 +315,64 @@
     </transition>
 
     <!-- ========================================
-         INVOICE MODAL
+         receipt MODAL
     ======================================== -->
     <transition name="modal">
-      <div v-if="showInvoiceModal" class="modal-overlay" @click="closeInvoiceModal">
-        <div class="modal-content invoice-modal" @click.stop>
+      <div v-if="showreceiptModal" class="modal-overlay" @click="closereceiptModal">
+        <div class="modal-content receipt-modal" @click.stop>
           <div class="modal-header">
             <h2>📄 ใบเสร็จ</h2>
-            <button @click="closeInvoiceModal" class="btn-close">×</button>
+            <button @click="closereceiptModal" class="btn-close">×</button>
           </div>
 
-          <div class="modal-body" v-if="selectedInvoice">
-            <div class="invoice-content">
-              <div class="invoice-header">
+          <div class="modal-body" v-if="selectedreceipt">
+            <div class="receipt-content">
+              <div class="receipt-header">
                 <div class="company-info">
                   <h1>CYBERCAR</h1>
                   <p>ศูนย์มาตราฐานทำความสะอาดรถยนต์</p>
                   <p>123 หมู่ 16 ถนนมิตรภาพ ตำบลในเมือง อำเภอเมือง จังหวัดขอนแก่น 40002</p>
                 </div>
-                <div class="invoice-number">
+                <div class="receipt-number">
                   <h3>ใบเสร็จรับเงิน</h3>
-                  <p>{{ selectedInvoice.invoice_number }}</p>
+                  <p>{{ selectedreceipt.receipt_number }}</p>
                 </div>
               </div>
 
-              <div class="invoice-divider"></div>
+              <div class="receipt-divider"></div>
 
-              <div class="invoice-details">
+              <div class="receipt-details">
                 <div class="detail-row">
                   <span>วันที่:</span>
-                  <span>{{ formatDateTime(selectedInvoice.payment_date) }}</span>
+                  <span>{{ formatDateTime(selectedreceipt.payment_date) }}</span>
                 </div>
                 <div class="detail-row">
                   <span>ลูกค้า:</span>
-                  <span>{{ selectedInvoice.cust_fname }} {{ selectedInvoice.cust_lname }}</span>
+                  <span>{{ selectedreceipt.cust_fname }} {{ selectedreceipt.cust_lname }}</span>
                 </div>
                 <div class="detail-row">
                   <span>เบอร์โทร:</span>
-                  <span>{{ selectedInvoice.cust_tel }}</span>
+                  <span>{{ selectedreceipt.cust_tel }}</span>
                 </div>
               </div>
 
-              <div class="invoice-items">
+              <div class="receipt-items">
                 <h4>รายการ:</h4>
-                <p>{{ selectedInvoice.invoice_description }}</p>
+                <p>{{ selectedreceipt.receipt_description }}</p>
               </div>
 
-              <div class="invoice-total">
+              <div class="receipt-total">
                 <div class="total-row">
                   <span>วิธีชำระ:</span>
-                  <span>{{ getPaymentMethodText(selectedInvoice.payment_method) }}</span>
+                  <span>{{ getPaymentMethodText(selectedreceipt.payment_method) }}</span>
                 </div>
                 <div class="total-row grand">
                   <strong>ยอดรวมทั้งสิ้น:</strong>
-                  <strong>฿{{ selectedInvoice.payment_amount?.toLocaleString() }}</strong>
+                  <strong>฿{{ selectedreceipt.payment_amount?.toLocaleString() }}</strong>
                 </div>
               </div>
 
-              <div class="invoice-footer">
+              <div class="receipt-footer">
                 <p>ขอบคุณที่ใช้บริการ</p>
                 <p class="small">*** กรุณาเก็บใบเสร็จไว้เป็นหลักฐาน ***</p>
               </div>
@@ -380,8 +380,8 @@
           </div>
 
           <div class="modal-actions">
-            <button @click="closeInvoiceModal" class="btn-cancel">ปิด</button>
-            <button @click="printInvoice(selectedInvoice)" class="btn-print-full">
+            <button @click="closereceiptModal" class="btn-cancel">ปิด</button>
+            <button @click="printreceipt(selectedreceipt)" class="btn-print-full">
               🖨️ พิมพ์ใบเสร็จ
             </button>
           </div>
@@ -414,11 +414,11 @@ const pendingPayments = ref<any[]>([]);
 const payments = ref<any[]>([]);
 const filteredPayments = ref<any[]>([]);
 const filterMethod = ref('');
-const searchInvoice = ref('');
+const searchreceipt = ref('');
 const showPaymentModal = ref(false);
-const showInvoiceModal = ref(false);
+const showReceiptModal = ref(false);
 const selectedBooking = ref<any>(null);
-const selectedInvoice = ref<any>(null);
+const selectedReceipt = ref<any>(null);
 const isProcessing = ref(false);
 
 const paymentForm = ref({
@@ -538,10 +538,10 @@ const filterPayments = () => {
     result = result.filter(p => p.payment_method === filterMethod.value);
   }
 
-  if (searchInvoice.value) {
-    const query = searchInvoice.value.toLowerCase();
+  if (searchreceipt.value) {
+    const query = searchreceipt.value.toLowerCase();
     result = result.filter(p => 
-      p.invoice_number?.toLowerCase().includes(query)
+      p.receipt_number?.toLowerCase().includes(query)
     );
   }
 
@@ -592,7 +592,7 @@ const confirmPayment = async () => {
           <div style="text-align: center; padding: 1rem;">
             <p style="font-size: 1.1rem; margin-bottom: 1rem;">เลขที่ใบเสร็จ</p>
             <p style="font-size: 2rem; font-weight: 900; color: #10b981; margin-bottom: 1rem;">
-              ${response.data.invoice_number}
+              ${response.data.receipt_number}
             </p>
             <p style="font-size: 1.5rem; color: #fff;">
               ยอดชำระ: ฿${selectedBooking.value.payment_amount?.toLocaleString()}
@@ -630,33 +630,33 @@ const confirmPayment = async () => {
   }
 };
 
-const viewInvoice = (payment: any) => {
-  selectedInvoice.value = payment;
-  showInvoiceModal.value = true;
+const viewreceipt = (payment: any) => {
+  selectedreceipt.value = payment;
+  showreceiptModal.value = true;
 };
 
-const closeInvoiceModal = () => {
-  showInvoiceModal.value = false;
-  selectedInvoice.value = null;
+const closereceiptModal = () => {
+  showreceiptModal.value = false;
+  selectedreceipt.value = null;
 };
 
 // ✅ แก้ไขแล้ว: ใช้ Template Literal
-const printInvoice = (payment: any) => {
+const printreceipt = (payment: any) => {
   if (!payment) return;
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
-  const invoiceHTML = `
+  const receiptHTML = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>ใบเสร็จ ${payment.invoice_number}</title>
+      <title>ใบเสร็จ ${payment.receipt_number}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Sarabun', sans-serif; padding: 2rem; }
-        .invoice { max-width: 600px; margin: 0 auto; }
+        .receipt { max-width: 600px; margin: 0 auto; }
         .header { text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem; }
         .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
         .details { margin: 2rem 0; }
@@ -666,12 +666,12 @@ const printInvoice = (payment: any) => {
       </style>
     </head>
     <body>
-      <div class="invoice">
+      <div class="receipt">
         <div class="header">
           <h1>CYBERCAR</h1>
           <p>ศูนย์มาตราฐานทำความสะอาดรถยนต์</p>
           <h3>ใบเสร็จรับเงิน</h3>
-          <p>${payment.invoice_number}</p>
+          <p>${payment.receipt_number}</p>
         </div>
         <div class="details">
           <div class="row">
@@ -688,7 +688,7 @@ const printInvoice = (payment: any) => {
           </div>
           <div class="row">
             <span>รายการ:</span>
-            <span>${payment.invoice_description}</span>
+            <span>${payment.receipt_description}</span>
           </div>
           <div class="row">
             <span>ชำระด้วย:</span>
@@ -716,7 +716,7 @@ const printInvoice = (payment: any) => {
     </html>
   `;
 
-  printWindow.document.write(invoiceHTML);
+  printWindow.document.write(receiptHTML);
   printWindow.document.close();
 };
 
@@ -729,7 +729,7 @@ const refundPayment = async (payment: any) => {
         ฿${payment.payment_amount?.toLocaleString()}
       </p>
       <p style="font-size: 0.9rem; color: #666;">
-        ใบเสร็จ: ${payment.invoice_number}
+        ใบเสร็จ: ${payment.receipt_number}
       </p>
     `,
     icon: 'warning',
@@ -1312,7 +1312,7 @@ tbody td {
   color: rgba(255, 255, 255, 0.9);
 }
 
-.invoice-number {
+.receipt-number {
   font-weight: 700;
   color: #fbbf24;
   font-size: 1rem;
@@ -1472,7 +1472,7 @@ tbody td {
   max-width: 700px;
 }
 
-.invoice-modal {
+.receipt-modal {
   max-width: 800px;
 }
 
@@ -1811,15 +1811,15 @@ tbody td {
 }
 
 /* ========================================
-   INVOICE CONTENT
+   receipt CONTENT
 ======================================== */
-.invoice-content {
+.receipt-content {
   padding: 2rem;
   background: #fff;
   color: #000;
 }
 
-.invoice-header {
+.receipt-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1840,29 +1840,29 @@ tbody td {
   color: #666;
 }
 
-.invoice-number {
+.receipt-number {
   text-align: right;
 }
 
-.invoice-number h3 {
+.receipt-number h3 {
   font-size: 1.3rem;
   margin-bottom: 0.5rem;
   color: #000;
 }
 
-.invoice-number p {
+.receipt-number p {
   font-size: 1.5rem;
   font-weight: 700;
   color: #dc2626;
 }
 
-.invoice-divider {
+.receipt-divider {
   height: 2px;
   background: linear-gradient(90deg, #dc2626, transparent);
   margin: 1.5rem 0;
 }
 
-.invoice-details {
+.receipt-details {
   margin: 2rem 0;
 }
 
@@ -1883,26 +1883,26 @@ tbody td {
   font-weight: 700;
 }
 
-.invoice-items {
+.receipt-items {
   margin: 2rem 0;
   padding: 1.5rem;
   background: #f9fafb;
   border-radius: 8px;
 }
 
-.invoice-items h4 {
+.receipt-items h4 {
   font-size: 1.1rem;
   margin-bottom: 1rem;
   color: #000;
 }
 
-.invoice-items p {
+.receipt-items p {
   font-size: 0.95rem;
   color: #333;
   line-height: 1.6;
 }
 
-.invoice-total {
+.receipt-total {
   margin: 2rem 0;
   padding: 1.5rem;
   background: #fef3c7;
@@ -1927,20 +1927,20 @@ tbody td {
   font-size: 2rem;
 }
 
-.invoice-footer {
+.receipt-footer {
   margin-top: 3rem;
   text-align: center;
   padding-top: 1.5rem;
   border-top: 2px dashed #ccc;
 }
 
-.invoice-footer p {
+.receipt-footer p {
   margin-bottom: 0.5rem;
   color: #000;
   font-weight: 600;
 }
 
-.invoice-footer .small {
+.receipt-footer .small {
   font-size: 0.85rem;
   color: #666;
   font-weight: 400;
@@ -2035,12 +2035,12 @@ tbody td {
     flex-direction: column;
   }
 
-  .invoice-header {
+  .receipt-header {
     flex-direction: column;
     gap: 1rem;
   }
 
-  .invoice-number {
+  .receipt-number {
     text-align: left;
   }
 }

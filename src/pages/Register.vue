@@ -47,7 +47,7 @@
 
             <!-- เบอร์โทร -->
             <div class="field">
-              <label>เบอร์โทรศัพท์</label>
+              <label>เบอร์โทรศัพท์ <span class="required">*</span></label>
               <input 
                 v-model="formData.cust_tel" 
                 type="tel" 
@@ -55,7 +55,7 @@
                 :disabled="isLoading"
                 @input="formatPhoneNumber"
               >
-              <small>รูปแบบ: 081-234-5678 (ไม่บังคับ)</small>
+              <small>รูปแบบ: 081-234-5678</small>
             </div>
 
             <!-- ที่อยู่ -->

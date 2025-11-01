@@ -22,7 +22,7 @@ export const getAllBookings = (req, res) => {
         i.invoice_description,
         br.branch_name
       FROM booking b
-      LEFT JOIN customer c ON b.customer_cust_ID = c.cust_ID
+      LEFT JOIN customer c ON b.cust_ID = c.cust_ID
       LEFT JOIN payment p ON b.booking_ID = p.booking_ID
       LEFT JOIN invoice i ON p.payment_ID = i.payment_ID
       LEFT JOIN branch br ON b.branch_ID = br.branch_ID

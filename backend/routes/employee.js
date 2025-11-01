@@ -1,140 +1,71 @@
-// backend/routes/employee.js
 import express from 'express';
 import db from '../config/database.js';
 
 const router = express.Router();
 
-// ========================================
-// GET All Employees
-// ========================================
+// GET All Positions
 router.get('/all', (req, res) => {
-  const sql = `
-    SELECT 
-      e.*,
-      r.Role_name,
-      r.salary,
-      b.branch_name
-    FROM employee e
-    LEFT JOIN Role r ON e.role_ID = r.Role_ID
-    LEFT JOIN branch b ON e.branch_ID = b.branch_ID
-    ORDER BY e.created_at DESC
-  `;
+  console.log('📥 GET /api/position/all');
+
+  const sql = 'SELECT * FROM employee_position ORDER BY pos_name';
 
   db.query(sql, (err, results) => {
     if (err) {
       console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Database error' 
-      });
+      return res.status(500).json({ success: false, message: 'Database error' });
     }
     
-    console.log('✅ Loaded', results.length, 'employees');
-    res.json({ success: true, employees: results });
+    console.log('✅ Loaded', results.length, 'positions');
+    res.json({ success: true, positions: results });
   });
 });
 
-// ========================================
-// CREATE Employee
-// ========================================
+// CREATE Position
 router.post('/create', (req, res) => {
-  const { 
-    emp_fname, 
-    emp_lname, 
-    emp_address, 
-    emp_username, 
-    emp_password, 
-    branch_ID, 
-    role_ID 
-  } = req.body;
+  const { pos_name, pos_salary } = req.body;
 
-  console.log('📥 Create Employee:', { emp_username, emp_fname, emp_lname });
-
-  // Validate required fields
-  if (!emp_fname || !emp_lname || !emp_username || !emp_password || !branch_ID || !role_ID) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'กรุณากรอกข้อมูลให้ครบถ้วน' 
-    });
+  if (!pos_name || !pos_salary) {
+    return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
   }
 
-  // Check duplicate username
-  db.query('SELECT * FROM employee WHERE emp_username = ?', [emp_username], (err, existing) => {
+  const sql = 'INSERT INTO employee_position (pos_name, pos_salary) VALUES (?, ?)';
+  
+  db.query(sql, [pos_name, pos_salary], (err, result) => {
     if (err) {
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Database error' 
-      });
+      console.error('❌ Create Error:', err);
+      return res.status(500).json({ success: false, message: 'Cannot create position' });
     }
-
-    if (existing.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Username นี้มีอยู่แล้ว' 
-      });
-    }
-
-    const sql = `
-      INSERT INTO employee 
-      (emp_fname, emp_lname, emp_address, emp_username, emp_password, branch_ID, role_ID) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
     
-    db.query(
-      sql, 
-      [emp_fname, emp_lname, emp_address, emp_username, emp_password, branch_ID, role_ID], 
-      (err, result) => {
-        if (err) {
-          console.error('❌ Create Error:', err);
-          return res.status(500).json({ 
-            success: false, 
-            message: 'Cannot create employee' 
-          });
-        }
-        
-        console.log('✅ Created employee ID:', result.insertId);
-        res.json({ success: true, employee_id: result.insertId });
-      }
-    );
+    console.log('✅ Created position ID:', result.insertId);
+    res.json({ success: true, pos_id: result.insertId });
   });
 });
 
-// ========================================
 // UPDATE Employee
-// ========================================
 router.put('/update/:id', (req, res) => {
   const { id } = req.params;
-  const { emp_fname, emp_lname, emp_address, branch_ID, role_ID } = req.body;
-
-  console.log('📝 Update Employee ID:', id);
+  const { emp_fname, emp_lname, emp_address, branch_ID, pos_ID } = req.body;
 
   const sql = `
     UPDATE employee 
-    SET emp_fname = ?, emp_lname = ?, emp_address = ?, branch_ID = ?, role_ID = ? 
+    SET emp_fname = ?, emp_lname = ?, emp_address = ?, branch_ID = ?, pos_ID = ? 
     WHERE emp_ID = ?
   `;
   
-  db.query(sql, [emp_fname, emp_lname, emp_address, branch_ID, role_ID, id], (err, result) => {
+  db.query(sql, [emp_fname, emp_lname, emp_address, branch_ID, pos_ID, id], (err, result) => {
     if (err) {
       console.error('❌ Update Error:', err);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Cannot update employee' 
-      });
+      return res.status(500).json({ success: false, message: 'Cannot update employee' });
     }
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'ไม่พบพนักงาน' 
-      });
+      return res.status(404).json({ success: false, message: 'ไม่พบพนักงาน' });
     }
     
     console.log('✅ Updated employee ID:', id);
     res.json({ success: true });
   });
 });
-
 // ========================================
 // DELETE Employee
 // ========================================

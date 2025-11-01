@@ -2,87 +2,83 @@
 import db from '../config/database.js';
 
 // ========================================
-// 1. REGISTER (สมัครสมาชิก)
+// 1. REGISTER
 // ========================================
 export const register = (req, res) => {
   console.log('');
   console.log('📥 ========== REGISTER REQUEST ==========');
-  console.log('Request body:', { ...req.body, password: '***' });
-  
+  console.log('Request body:', req.body);
+
   const { username, password, cust_fname, cust_lname, cust_tel, cust_address } = req.body;
-  
-  // Validation
+
   if (!username || !password || !cust_fname || !cust_lname) {
-    console.log('❌ Validation Failed: Missing required fields');
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (ชื่อผู้ใช้, รหัสผ่าน, ชื่อ, นามสกุล)'
+      message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน'
     });
   }
 
-  // Check username length
   if (username.length < 4) {
-    console.log('❌ Validation Failed: Username too short');
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'ชื่อผู้ใช้ต้องมีอย่างน้อย 4 ตัวอักษร'
+      message: 'Username ต้องมีอย่างน้อย 4 ตัวอักษร'
     });
   }
 
-  // Check password length
   if (password.length < 6) {
-    console.log('❌ Validation Failed: Password too short');
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
       message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
     });
   }
 
-  // ตรวจสอบ username ซ้ำ
-  const checkSql = 'SELECT cust_ID FROM customer WHERE cust_username = ?';
+  // Check duplicate username
+  const checkSql = 'SELECT cust_username FROM customer WHERE cust_username = ?';
   
   db.query(checkSql, [username], (err, results) => {
     if (err) {
       console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
+      return res.status(500).json({
         success: false,
-        message: 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล'
+        message: 'เกิดข้อผิดพลาดในการตรวจสอบ'
       });
     }
 
     if (results.length > 0) {
       console.log('⚠️ Username already exists:', username);
-      return res.status(400).json({ 
+      return res.status(409).json({
         success: false,
-        message: 'Username นี้มีผู้ใช้งานแล้ว กรุณาเลือก username อื่น'
+        message: 'Username นี้ถูกใช้งานแล้ว'
       });
     }
 
-    // Insert ข้อมูลลูกค้าใหม่
+    // Insert new customer
     const insertSql = `
-      INSERT INTO customer (cust_username, cust_password, cust_fname, cust_lname, cust_tel, cust_address) 
+      INSERT INTO customer 
+      (cust_username, cust_password, cust_fname, cust_lname, cust_tel, cust_address) 
       VALUES (?, ?, ?, ?, ?, ?)
     `;
-    
+
     db.query(
-      insertSql, 
-      [username, password, cust_fname, cust_lname, cust_tel || null, cust_address || null], 
+      insertSql,
+      [username, password, cust_fname, cust_lname, cust_tel || null, cust_address || null],
       (err, result) => {
         if (err) {
-          console.error('❌ Database Error:', err);
-          return res.status(500).json({ 
+          console.error('❌ Insert Error:', err);
+          return res.status(500).json({
             success: false,
-            message: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'
+            message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก'
           });
         }
 
-        console.log('✅ Registration successful! User ID:', result.insertId);
+        console.log('✅ Registration successful!');
+        console.log('Customer ID:', result.insertId);
         console.log('======================================');
-        
-        res.json({ 
+
+        res.status(201).json({
           success: true,
           message: 'สมัครสมาชิกสำเร็จ!',
-          userId: result.insertId
+          customerId: result.insertId
         });
       }
     );
@@ -90,17 +86,17 @@ export const register = (req, res) => {
 };
 
 // ========================================
-// 2. LOGIN (Customer only - สำหรับ backward compatibility)
+// 2. LOGIN (Customer Only)
 // ========================================
 export const login = (req, res) => {
   console.log('');
-  console.log('📥 ========== LOGIN REQUEST (Customer) ==========');
-  console.log('Request body:', { username: req.body.username, password: '***' });
-  
+  console.log('📥 ========== LOGIN REQUEST ==========');
+  console.log('Username:', req.body.username);
+
   const { username, password } = req.body;
-  
+
   if (!username || !password) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
       message: 'กรุณากรอก username และ password'
     });
@@ -115,57 +111,57 @@ export const login = (req, res) => {
       cust_address as address,
       cust_username as username,
       cust_password as password,
-      created_at
+      created_at as memberSince
     FROM customer 
     WHERE cust_username = ?
   `;
-  
+
   db.query(sql, [username], (err, results) => {
     if (err) {
       console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
+      return res.status(500).json({
         success: false,
-        message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+        message: 'เกิดข้อผิดพลาด'
       });
     }
 
     if (results.length === 0) {
       console.log('⚠️ User not found:', username);
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' 
+        message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
       });
     }
 
-    const customer = results[0];
+    const user = results[0];
 
-    if (customer.password !== password) {
-      console.log('⚠️ Wrong password for:', username);
-      return res.status(401).json({ 
+    if (user.password !== password) {
+      console.log('⚠️ Wrong password');
+      return res.status(401).json({
         success: false,
-        message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' 
+        message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
       });
     }
 
     const userData = {
-      id: customer.id,
-      username: customer.username,
-      firstName: customer.firstName || '',
-      lastName: customer.lastName || '',
-      fullName: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.username,
-      phone: customer.phone || '',
-      address: customer.address || '',
-      memberSince: customer.created_at || new Date().toISOString()
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
+      phone: user.phone || '',
+      address: user.address || '',
+      memberSince: user.memberSince || new Date().toISOString()
     };
 
-    console.log('✅ Customer Login successful! ID:', customer.id);
+    console.log('✅ Login successful!');
+    console.log('Customer ID:', user.id);
     console.log('======================================');
-    
-    res.json({ 
+
+    res.json({
       success: true,
       message: 'เข้าสู่ระบบสำเร็จ!',
-      user: userData,      // ✅ Standard field
-      customer: userData   // ✅ Backward compatibility
+      user: userData
     });
   });
 };
@@ -244,8 +240,8 @@ export const unifiedLogin = (req, res) => {
         success: true,
         message: 'เข้าสู่ระบบสำเร็จ!',
         userType: 'customer',
-        user: userData,      // ✅ Standard field
-        customer: userData   // ✅ Backward compatibility
+        user: userData,
+        customer: userData
       });
     }
 
@@ -259,12 +255,13 @@ export const unifiedLogin = (req, res) => {
         e.emp_password as password,
         e.emp_address as address,
         e.branch_ID as branchId,
-        r.Role_name as role,
-        r.Role_ID as roleId,
+        p.pos_name as role,
+        p.pos_ID as roleId,
+        p.pos_salary as salary,
         b.branch_name as branchName,
         'employee' as userType
       FROM employee e
-      LEFT JOIN Role r ON e.role_ID = r.Role_ID
+      LEFT JOIN employee_position p ON e.pos_ID = p.pos_ID
       LEFT JOIN branch b ON e.branch_ID = b.branch_ID
       WHERE e.emp_username = ?
     `;
@@ -305,6 +302,7 @@ export const unifiedLogin = (req, res) => {
         fullName: `${employee.firstName} ${employee.lastName}`,
         role: employee.role,
         roleId: employee.roleId,
+        salary: employee.salary,
         branchId: employee.branchId,
         branchName: employee.branchName,
         address: employee.address || ''
@@ -312,7 +310,7 @@ export const unifiedLogin = (req, res) => {
 
       console.log('✅ Employee Login successful!');
       console.log('Employee ID:', employee.id);
-      console.log('Role:', employee.role);
+      console.log('Position:', employee.role);
       console.log('Branch:', employee.branchName);
       console.log('======================================');
       
@@ -320,8 +318,8 @@ export const unifiedLogin = (req, res) => {
         success: true,
         message: 'เข้าสู่ระบบสำเร็จ!',
         userType: 'employee',
-        user: userData,      // ✅ Standard field
-        employee: userData   // ✅ Backward compatibility
+        user: userData,
+        employee: userData
       });
     });
   });
@@ -331,17 +329,16 @@ export const unifiedLogin = (req, res) => {
 // 4. GET PROFILE
 // ========================================
 export const getProfile = (req, res) => {
-  console.log('');
-  console.log('📥 ========== GET PROFILE REQUEST ==========');
   const { id } = req.params;
-  console.log('Customer ID:', id);
+
+  console.log('📥 GET Profile ID:', id);
 
   const sql = `
     SELECT 
       cust_ID as id,
-      cust_username as username,
       cust_fname as firstName,
       cust_lname as lastName,
+      cust_username as username,
       cust_tel as phone,
       cust_address as address,
       created_at as memberSince
@@ -352,40 +349,27 @@ export const getProfile = (req, res) => {
   db.query(sql, [id], (err, results) => {
     if (err) {
       console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
+      return res.status(500).json({
         success: false,
-        message: 'เกิดข้อผิดพลาดในการดึงข้อมูล'
+        message: 'เกิดข้อผิดพลาด'
       });
     }
 
     if (results.length === 0) {
-      console.log('⚠️ Customer not found:', id);
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
         message: 'ไม่พบข้อมูลผู้ใช้'
       });
     }
 
-    const customer = results[0];
-    
-    const userData = {
-      id: customer.id,
-      username: customer.username,
-      firstName: customer.firstName || '',
-      lastName: customer.lastName || '',
-      fullName: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.username,
-      phone: customer.phone || '',
-      address: customer.address || '',
-      memberSince: customer.memberSince
-    };
+    const user = results[0];
+    user.fullName = `${user.firstName} ${user.lastName}`;
 
-    console.log('✅ Profile retrieved successfully');
-    console.log('======================================');
-    
-    res.json({ 
+    console.log('✅ Profile loaded:', user.username);
+
+    res.json({
       success: true,
-      user: userData,
-      customer: userData  // ✅ Backward compatibility
+      user: user
     });
   });
 };
@@ -394,16 +378,13 @@ export const getProfile = (req, res) => {
 // 5. UPDATE PROFILE
 // ========================================
 export const updateProfile = (req, res) => {
-  console.log('');
-  console.log('📥 ========== UPDATE PROFILE REQUEST ==========');
   const { id } = req.params;
   const { cust_fname, cust_lname, cust_tel, cust_address } = req.body;
-  
-  console.log('Customer ID:', id);
-  console.log('Update data:', { cust_fname, cust_lname, cust_tel, cust_address });
+
+  console.log('📥 UPDATE Profile ID:', id);
 
   if (!cust_fname || !cust_lname) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
       message: 'กรุณากรอกชื่อและนามสกุล'
     });
@@ -411,31 +392,33 @@ export const updateProfile = (req, res) => {
 
   const sql = `
     UPDATE customer 
-    SET cust_fname = ?, cust_lname = ?, cust_tel = ?, cust_address = ?, updated_at = NOW()
+    SET cust_fname = ?, 
+        cust_lname = ?, 
+        cust_tel = ?, 
+        cust_address = ?,
+        updated_at = NOW()
     WHERE cust_ID = ?
   `;
 
-  db.query(sql, [cust_fname, cust_lname, cust_tel || null, cust_address || null, id], (err, result) => {
+  db.query(sql, [cust_fname, cust_lname, cust_tel, cust_address, id], (err, result) => {
     if (err) {
-      console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
+      console.error('❌ Update Error:', err);
+      return res.status(500).json({
         success: false,
-        message: 'เกิดข้อผิดพลาดในการอัพเดทข้อมูล'
+        message: 'เกิดข้อผิดพลาด'
       });
     }
 
     if (result.affectedRows === 0) {
-      console.log('⚠️ Customer not found:', id);
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'ไม่พบข้อมูลผู้ใช้'
+        message: 'ไม่พบผู้ใช้'
       });
     }
 
-    console.log('✅ Profile updated successfully');
-    console.log('======================================');
+    console.log('✅ Profile updated');
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'อัพเดทข้อมูลสำเร็จ'
     });
@@ -446,71 +429,67 @@ export const updateProfile = (req, res) => {
 // 6. CHANGE PASSWORD
 // ========================================
 export const changePassword = (req, res) => {
-  console.log('');
-  console.log('📥 ========== CHANGE PASSWORD REQUEST ==========');
   const { id } = req.params;
   const { oldPassword, newPassword } = req.body;
-  
-  console.log('Customer ID:', id);
+
+  console.log('📥 CHANGE Password for ID:', id);
 
   if (!oldPassword || !newPassword) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'กรุณากรอกข้อมูลให้ครบถ้วน'
+      message: 'กรุณากรอกรหัสผ่านเดิมและรหัสผ่านใหม่'
     });
   }
 
   if (newPassword.length < 6) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
       message: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร'
     });
   }
 
-  // ตรวจสอบรหัสผ่านเก่า
   const checkSql = 'SELECT cust_password FROM customer WHERE cust_ID = ?';
   
   db.query(checkSql, [id], (err, results) => {
     if (err) {
       console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
+      return res.status(500).json({
         success: false,
-        message: 'เกิดข้อผิดพลาดในการตรวจสอบรหัสผ่าน'
+        message: 'เกิดข้อผิดพลาด'
       });
     }
 
     if (results.length === 0) {
-      console.log('⚠️ Customer not found:', id);
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'ไม่พบข้อมูลผู้ใช้'
+        message: 'ไม่พบผู้ใช้'
       });
     }
 
-    if (results[0].cust_password !== oldPassword) {
+    const currentPassword = results[0].cust_password;
+
+    if (currentPassword !== oldPassword) {
       console.log('⚠️ Wrong old password');
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'รหัสผ่านเก่าไม่ถูกต้อง'
+        message: 'รหัสผ่านเดิมไม่ถูกต้อง'
       });
     }
 
-    // อัพเดทรหัสผ่านใหม่
     const updateSql = 'UPDATE customer SET cust_password = ?, updated_at = NOW() WHERE cust_ID = ?';
     
     db.query(updateSql, [newPassword, id], (err, result) => {
       if (err) {
-        console.error('❌ Database Error:', err);
-        return res.status(500).json({ 
+        console.error('❌ Update Error:', err);
+        return res.status(500).json({
           success: false,
-          message: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน'
+          message: 'เกิดข้อผิดพลาด'
         });
       }
 
-      console.log('✅ Password changed successfully');
-      console.log('======================================');
+      console.log('✅ Password changed');
 
-      res.json({ 
+      res.json({
         success: true,
         message: 'เปลี่ยนรหัสผ่านสำเร็จ'
       });
@@ -522,64 +501,68 @@ export const changePassword = (req, res) => {
 // 7. DELETE ACCOUNT
 // ========================================
 export const deleteAccount = (req, res) => {
-  console.log('');
-  console.log('📥 ========== DELETE ACCOUNT REQUEST ==========');
   const { id } = req.params;
   const { password } = req.body;
-  
-  console.log('Customer ID:', id);
+
+  console.log('📥 DELETE Account ID:', id);
 
   if (!password) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'กรุณากรอกรหัสผ่านเพื่อยืนยัน'
+      message: 'กรุณายืนยันรหัสผ่าน'
     });
   }
 
-  // ตรวจสอบรหัสผ่าน
   const checkSql = 'SELECT cust_password FROM customer WHERE cust_ID = ?';
   
   db.query(checkSql, [id], (err, results) => {
     if (err) {
       console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
+      return res.status(500).json({
         success: false,
-        message: 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล'
+        message: 'เกิดข้อผิดพลาด'
       });
     }
 
     if (results.length === 0) {
-      console.log('⚠️ Customer not found:', id);
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'ไม่พบข้อมูลผู้ใช้'
+        message: 'ไม่พบผู้ใช้'
       });
     }
 
-    if (results[0].cust_password !== password) {
+    const currentPassword = results[0].cust_password;
+
+    if (currentPassword !== password) {
       console.log('⚠️ Wrong password');
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         message: 'รหัสผ่านไม่ถูกต้อง'
       });
     }
 
-    // ลบบัญชี
     const deleteSql = 'DELETE FROM customer WHERE cust_ID = ?';
     
     db.query(deleteSql, [id], (err, result) => {
       if (err) {
-        console.error('❌ Database Error:', err);
-        return res.status(500).json({ 
+        console.error('❌ Delete Error:', err);
+        
+        if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+          return res.status(400).json({
+            success: false,
+            message: 'ไม่สามารถลบบัญชีได้ เนื่องจากมีข้อมูลการจองที่เกี่ยวข้อง'
+          });
+        }
+
+        return res.status(500).json({
           success: false,
-          message: 'เกิดข้อผิดพลาดในการลบบัญชี'
+          message: 'เกิดข้อผิดพลาด'
         });
       }
 
-      console.log('✅ Account deleted successfully');
-      console.log('======================================');
+      console.log('✅ Account deleted');
 
-      res.json({ 
+      res.json({
         success: true,
         message: 'ลบบัญชีสำเร็จ'
       });

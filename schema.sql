@@ -15,7 +15,9 @@ DROP TABLE IF EXISTS Service_type;
 CREATE TABLE branch (
     branch_ID INT PRIMARY KEY AUTO_INCREMENT,
     branch_name VARCHAR(100) NOT NULL,
-    branch_address VARCHAR(255) NOT NULL  
+    branch_address VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE customer (
@@ -25,13 +27,17 @@ CREATE TABLE customer (
     cust_tel VARCHAR(20) NOT NULL, 
     cust_address VARCHAR(255),
     cust_username VARCHAR(50) NOT NULL UNIQUE,
-    cust_password VARCHAR(255) NOT NULL
+    cust_password VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE employee_position (
     pos_ID INT PRIMARY KEY AUTO_INCREMENT,
     pos_name VARCHAR(100) NOT NULL UNIQUE,
-    pos_salary DECIMAL(10,2) NOT NULL  
+    pos_salary DECIMAL(10,2) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE employee (
@@ -43,6 +49,8 @@ CREATE TABLE employee (
     emp_password VARCHAR(255) NOT NULL,
     branch_ID INT NOT NULL,
     pos_ID INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (branch_ID) REFERENCES branch(branch_ID),
     FOREIGN KEY (pos_ID) REFERENCES employee_position(pos_ID)
@@ -51,14 +59,18 @@ CREATE TABLE employee (
 CREATE TABLE vehicle_type (
     vehicletype_ID INT PRIMARY KEY AUTO_INCREMENT,
     vehicletype_name VARCHAR(50) NOT NULL,
-    vehicletype_multiplier DECIMAL(3,2) NOT NULL 
+    vehicletype_multiplier DECIMAL(3,2) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE service_type (
     serviceType_ID INT PRIMARY KEY AUTO_INCREMENT,
     serviceType_Name VARCHAR(100) NOT NULL,
     serviceType_BasePrice DECIMAL(10,2) NOT NULL,
-   serviceType_Duration INT DEFAULT 30 NOT NULL COMMENT 'ระยะเวลาในการให้บริการ (นาที)'
+   serviceType_Duration INT DEFAULT 30 NOT NULL COMMENT 'ระยะเวลาในการให้บริการ (นาที)',
+   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE membership (
@@ -67,6 +79,8 @@ CREATE TABLE membership (
     membership_description TEXT,
     membership_point INT DEFAULT 0 NOT NULL, 
     cust_ID INT NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (cust_ID) REFERENCES customer(cust_ID)
 );
@@ -78,6 +92,8 @@ CREATE TABLE vehicle (
     vehicle_color VARCHAR(50),
     cust_ID INT NOT NULL,
     vehicletype_ID INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (cust_ID) REFERENCES customer(cust_ID),
     FOREIGN KEY (vehicletype_ID ) REFERENCES vehicle_type(vehicletype_ID)
@@ -104,6 +120,7 @@ CREATE TABLE payment (
     payment_date DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,  
     payment_method VARCHAR(50) NOT NULL,
     booking_ID INT NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (booking_ID) REFERENCES booking(booking_ID)
 );
@@ -115,6 +132,8 @@ CREATE TABLE service (
     service_finishdate DATETIME,
     booking_ID INT NOT NULL,
     vehicle_ID INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (booking_ID) REFERENCES booking(booking_ID),
     FOREIGN KEY (vehicle_ID) REFERENCES vehicle(vehicle_ID)
@@ -126,6 +145,7 @@ CREATE TABLE receipt (
     receipt_date DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
     receipt_description TEXT,
     payment_ID INT NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (payment_ID) REFERENCES payment(payment_ID)
 );
@@ -138,8 +158,28 @@ CREATE TABLE service_detail (
     service_ID INT NOT NULL,
     serviceType_ID INT NOT NULL,
     emp_ID INT NOT NULL,
-
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (service_ID) REFERENCES service(service_ID),
     FOREIGN KEY (serviceType_ID) REFERENCES service_type(serviceType_ID),
     FOREIGN KEY (emp_ID) REFERENCES employee(emp_ID)
 );
+
+-- 1. เพิ่ม duration ใน booking
+ALTER TABLE booking 
+ADD COLUMN duration INT DEFAULT 30 COMMENT 'ระยะเวลาบริการ (นาที)';
+
+-- 2. แก้ vehicle_plate ให้รองรับ TEMP
+ALTER TABLE vehicle 
+MODIFY COLUMN vehicle_plate VARCHAR(20) UNIQUE;
+
+-- 3. เปลี่ยนชื่อ receipt columns ให้สอดคล้อง (หรือใช้ alias ใน query)
+-- ไม่แนะนำเปลี่ยนชื่อตาราง แต่สามารถใช้ alias ได้
+
+-- 4. เพิ่ม booking_time
+ALTER TABLE booking 
+ADD COLUMN booking_time TIME COMMENT 'เวลาที่จอง';
+
+-- 5. เพิ่ม index สำหรับ performance
+CREATE INDEX idx_booking_date_time ON booking(booking_date, booking_time);
+CREATE INDEX idx_booking_status ON booking(booking_status);
+CREATE INDEX idx_service_status ON service(service_status);

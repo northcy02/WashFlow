@@ -94,7 +94,7 @@ const router = useRouter();
 const historyList = ref<any[]>([]);
 
 // ✅ แก้ไข: ดึงข้อมูลจาก API
-const loadHistory = async () => {
+    const loadHistory = async () => {
   try {
     const userStr = localStorage.getItem('user');
     if (!userStr) {
@@ -103,17 +103,15 @@ const loadHistory = async () => {
     }
 
     const user = JSON.parse(userStr);
-
     const response = await axios.get(`http://localhost:3000/api/booking/history/${user.id}`);
 
     if (response.data.success) {
       historyList.value = response.data.bookings.map((booking: any) => {
-        // แยก services จาก invoice_description
-        const servicesMatch = booking.invoice_description?.match(/บริการ: (.+)/);
+        // เปลี่ยนจาก invoice_description เป็น receipt_description
+        const servicesMatch = booking.receipt_description?.match(/บริการ: (.+)/);
         const servicesArray = servicesMatch ? servicesMatch[1].split(', ') : [];
         
-        // แยก vehicle_type จาก invoice_description
-        const vehicleMatch = booking.invoice_description?.match(/(.+) \|/);
+        const vehicleMatch = booking.receipt_description?.match(/(.+) \|/);
         const vehicleType = vehicleMatch ? vehicleMatch[1].replace('จองบริการล้างรถ - ', '') : '-';
 
         return {
@@ -130,11 +128,10 @@ const loadHistory = async () => {
           total: booking.payment_amount,
           paymentMethod: booking.payment_method,
           status: booking.booking_status,
-          invoiceNumber: booking.invoice_number
+          receiptNumber: booking.receipt_number  // เปลี่ยนจาก invoice_number
         };
       });
     }
-
   } catch (error) {
     console.error('❌ Load History Error:', error);
     Swal.fire({
