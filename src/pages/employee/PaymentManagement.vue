@@ -1,8 +1,7 @@
+<!-- src/pages/employee/PaymentManagement.vue -->
 <template>
   <div class="payment-management-page">
-    <!-- ========================================
-         HEADER
-    ======================================== -->
+    <!-- HEADER -->
     <header class="page-header">
       <div class="container">
         <div class="header-content">
@@ -11,20 +10,15 @@
             <h1>💰 การเงิน</h1>
             <p>รับชำระเงิน & ดูใบเสร็จ</p>
           </div>
-          <div class="header-date">
-            {{ currentDate }}
-          </div>
+          <div class="header-date">{{ currentDate }}</div>
         </div>
       </div>
     </header>
 
-    <!-- ========================================
-         REVENUE SECTION
-    ======================================== -->
+    <!-- REVENUE SECTION -->
     <section class="revenue-section">
       <div class="container">
         <div class="revenue-grid">
-          <!-- Today Revenue -->
           <div class="revenue-card today">
             <div class="card-icon">💰</div>
             <div class="card-content">
@@ -34,7 +28,6 @@
             </div>
           </div>
 
-          <!-- Cash -->
           <div class="revenue-card cash">
             <div class="card-icon">💵</div>
             <div class="card-content">
@@ -46,7 +39,6 @@
             </div>
           </div>
 
-          <!-- Card -->
           <div class="revenue-card card-payment">
             <div class="card-icon">💳</div>
             <div class="card-content">
@@ -58,7 +50,6 @@
             </div>
           </div>
 
-          <!-- QR -->
           <div class="revenue-card qr">
             <div class="card-icon">📱</div>
             <div class="card-content">
@@ -73,9 +64,7 @@
       </div>
     </section>
 
-    <!-- ========================================
-         PENDING PAYMENTS
-    ======================================== -->
+    <!-- PENDING PAYMENTS -->
     <section class="pending-section">
       <div class="container">
         <div class="section-header">
@@ -84,13 +73,11 @@
         </div>
 
         <div class="pending-grid">
-          <!-- Empty State -->
           <div v-if="pendingPayments.length === 0" class="empty-pending">
             <div class="icon">📭</div>
             <p>ไม่มีรายการรอชำระเงิน</p>
           </div>
 
-          <!-- Pending Cards -->
           <div 
             v-for="booking in pendingPayments" 
             :key="booking.booking_ID"
@@ -123,9 +110,7 @@
       </div>
     </section>
 
-    <!-- ========================================
-         PAYMENT HISTORY
-    ======================================== -->
+    <!-- PAYMENT HISTORY -->
     <section class="history-section">
       <div class="container">
         <div class="section-header">
@@ -138,7 +123,7 @@
               <option value="qr">QR Code</option>
             </select>
             <input 
-              v-model="searchreceipt" 
+              v-model="searchReceipt" 
               type="text" 
               placeholder="ค้นหาเลขที่ใบเสร็จ..."
               @input="filterPayments"
@@ -186,10 +171,10 @@
                 <td>{{ formatDateTime(payment.payment_date) }}</td>
                 <td>
                   <div class="action-buttons">
-                    <button @click="viewreceipt(payment)" class="btn-view" title="ดูใบเสร็จ">
+                    <button @click="viewReceipt(payment)" class="btn-view" title="ดูใบเสร็จ">
                       👁️
                     </button>
-                    <button @click="printreceipt(payment)" class="btn-print" title="พิมพ์">
+                    <button @click="printReceipt(payment)" class="btn-print" title="พิมพ์">
                       🖨️
                     </button>
                     <button 
@@ -209,9 +194,7 @@
       </div>
     </section>
 
-    <!-- ========================================
-         PAYMENT MODAL
-    ======================================== -->
+    <!-- PAYMENT MODAL -->
     <transition name="modal">
       <div v-if="showPaymentModal" class="modal-overlay" @click="closePaymentModal">
         <div class="modal-content payment-modal" @click.stop>
@@ -221,7 +204,6 @@
           </div>
 
           <div class="modal-body" v-if="selectedBooking">
-            <!-- Booking Summary -->
             <div class="booking-summary">
               <h3>รายละเอียดการจอง #{{ selectedBooking.booking_ID }}</h3>
               <div class="summary-row">
@@ -242,7 +224,6 @@
               </div>
             </div>
 
-            <!-- Payment Method -->
             <div class="payment-method-section">
               <h3>วิธีชำระเงิน</h3>
               <div class="payment-methods">
@@ -270,7 +251,6 @@
               </div>
             </div>
 
-            <!-- Cash Input -->
             <div v-if="paymentForm.method === 'cash'" class="cash-input-section">
               <h3>รับเงินสด</h3>
               <div class="amount-input-wrapper">
@@ -314,18 +294,16 @@
       </div>
     </transition>
 
-    <!-- ========================================
-         receipt MODAL
-    ======================================== -->
+    <!-- RECEIPT MODAL -->
     <transition name="modal">
-      <div v-if="showreceiptModal" class="modal-overlay" @click="closereceiptModal">
+      <div v-if="showReceiptModal" class="modal-overlay" @click="closeReceiptModal">
         <div class="modal-content receipt-modal" @click.stop>
           <div class="modal-header">
             <h2>📄 ใบเสร็จ</h2>
-            <button @click="closereceiptModal" class="btn-close">×</button>
+            <button @click="closeReceiptModal" class="btn-close">×</button>
           </div>
 
-          <div class="modal-body" v-if="selectedreceipt">
+          <div class="modal-body" v-if="selectedReceipt">
             <div class="receipt-content">
               <div class="receipt-header">
                 <div class="company-info">
@@ -335,7 +313,7 @@
                 </div>
                 <div class="receipt-number">
                   <h3>ใบเสร็จรับเงิน</h3>
-                  <p>{{ selectedreceipt.receipt_number }}</p>
+                  <p>{{ selectedReceipt.receipt_number }}</p>
                 </div>
               </div>
 
@@ -344,31 +322,31 @@
               <div class="receipt-details">
                 <div class="detail-row">
                   <span>วันที่:</span>
-                  <span>{{ formatDateTime(selectedreceipt.payment_date) }}</span>
+                  <span>{{ formatDateTime(selectedReceipt.payment_date) }}</span>
                 </div>
                 <div class="detail-row">
                   <span>ลูกค้า:</span>
-                  <span>{{ selectedreceipt.cust_fname }} {{ selectedreceipt.cust_lname }}</span>
+                  <span>{{ selectedReceipt.cust_fname }} {{ selectedReceipt.cust_lname }}</span>
                 </div>
                 <div class="detail-row">
                   <span>เบอร์โทร:</span>
-                  <span>{{ selectedreceipt.cust_tel }}</span>
+                  <span>{{ selectedReceipt.cust_tel }}</span>
                 </div>
               </div>
 
               <div class="receipt-items">
                 <h4>รายการ:</h4>
-                <p>{{ selectedreceipt.receipt_description }}</p>
+                <p>{{ selectedReceipt.receipt_description }}</p>
               </div>
 
               <div class="receipt-total">
                 <div class="total-row">
                   <span>วิธีชำระ:</span>
-                  <span>{{ getPaymentMethodText(selectedreceipt.payment_method) }}</span>
+                  <span>{{ getPaymentMethodText(selectedReceipt.payment_method) }}</span>
                 </div>
                 <div class="total-row grand">
                   <strong>ยอดรวมทั้งสิ้น:</strong>
-                  <strong>฿{{ selectedreceipt.payment_amount?.toLocaleString() }}</strong>
+                  <strong>฿{{ selectedReceipt.payment_amount?.toLocaleString() }}</strong>
                 </div>
               </div>
 
@@ -380,8 +358,8 @@
           </div>
 
           <div class="modal-actions">
-            <button @click="closereceiptModal" class="btn-cancel">ปิด</button>
-            <button @click="printreceipt(selectedreceipt)" class="btn-print-full">
+            <button @click="closeReceiptModal" class="btn-cancel">ปิด</button>
+            <button @click="printReceipt(selectedReceipt)" class="btn-print-full">
               🖨️ พิมพ์ใบเสร็จ
             </button>
           </div>
@@ -400,7 +378,7 @@ import Swal from 'sweetalert2';
 const router = useRouter();
 
 // ========================================
-// STATE
+// STATE (✅ แก้ไขชื่อให้เป็น camelCase ทั้งหมด)
 // ========================================
 const currentEmployee = ref<any>(null);
 const todayRevenue = ref(0);
@@ -414,11 +392,11 @@ const pendingPayments = ref<any[]>([]);
 const payments = ref<any[]>([]);
 const filteredPayments = ref<any[]>([]);
 const filterMethod = ref('');
-const searchreceipt = ref('');
+const searchReceipt = ref('');  // ✅ แก้จาก searchreceipt
 const showPaymentModal = ref(false);
-const showReceiptModal = ref(false);
+const showReceiptModal = ref(false);  // ✅ แก้จาก showreceiptModal
 const selectedBooking = ref<any>(null);
-const selectedReceipt = ref<any>(null);
+const selectedReceipt = ref<any>(null);  // ✅ แก้จาก selectedreceipt
 const isProcessing = ref(false);
 
 const paymentForm = ref({
@@ -493,8 +471,10 @@ const loadRevenue = async () => {
   try {
     const response = await axios.get('http://localhost:3000/api/management/booking/revenue');
     if (response.data.success) {
-      todayRevenue.value = response.data.revenue.today || 0;
-      todayTransactions.value = response.data.revenue.transactions || 0;
+      todayRevenue.value = response.data.revenue.total_revenue || 0;
+      todayTransactions.value = response.data.revenue.total_bookings || 0;
+      
+      // ✅ ถ้า API ไม่มี breakdown ให้คำนวณเอง
       paymentBreakdown.value = response.data.revenue.breakdown || {
         cash: 0,
         card: 0,
@@ -538,8 +518,8 @@ const filterPayments = () => {
     result = result.filter(p => p.payment_method === filterMethod.value);
   }
 
-  if (searchreceipt.value) {
-    const query = searchreceipt.value.toLowerCase();
+  if (searchReceipt.value) {  // ✅ แก้ชื่อ
+    const query = searchReceipt.value.toLowerCase();
     result = result.filter(p => 
       p.receipt_number?.toLowerCase().includes(query)
     );
@@ -568,10 +548,6 @@ const closePaymentModal = () => {
   };
 };
 
-const calculateChange = () => {
-  // Auto-calculate in computed property
-};
-
 const confirmPayment = async () => {
   isProcessing.value = true;
 
@@ -582,7 +558,7 @@ const confirmPayment = async () => {
       received_amount: paymentForm.value.receivedAmount,
       change_amount: changeAmount.value,
       notes: paymentForm.value.notes,
-      employee_id: currentEmployee.value.id
+      employee_id: currentEmployee.value?.id
     });
 
     if (response.data.success) {
@@ -630,18 +606,18 @@ const confirmPayment = async () => {
   }
 };
 
-const viewreceipt = (payment: any) => {
-  selectedreceipt.value = payment;
-  showreceiptModal.value = true;
+// ✅ แก้ชื่อ function
+const viewReceipt = (payment: any) => {
+  selectedReceipt.value = payment;
+  showReceiptModal.value = true;
 };
 
-const closereceiptModal = () => {
-  showreceiptModal.value = false;
-  selectedreceipt.value = null;
+const closeReceiptModal = () => {
+  showReceiptModal.value = false;
+  selectedReceipt.value = null;
 };
 
-// ✅ แก้ไขแล้ว: ใช้ Template Literal
-const printreceipt = (payment: any) => {
+const printReceipt = (payment: any) => {
   if (!payment) return;
 
   const printWindow = window.open('', '_blank');
@@ -649,20 +625,117 @@ const printreceipt = (payment: any) => {
 
   const receiptHTML = `
     <!DOCTYPE html>
-    <html>
+    <html lang="th">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>ใบเสร็จ ${payment.receipt_number}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Sarabun', sans-serif; padding: 2rem; }
-        .receipt { max-width: 600px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem; }
-        .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        body { 
+          font-family: 'Sarabun', 'Arial', sans-serif; 
+          padding: 2rem; 
+          background: #fff;
+        }
+        .receipt { 
+          max-width: 600px; 
+          margin: 0 auto; 
+          border: 2px solid #000;
+          padding: 2rem;
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 2rem; 
+          padding-bottom: 1rem; 
+          border-bottom: 3px solid #dc2626; 
+        }
+        .header h1 { 
+          font-size: 2.5rem; 
+          margin-bottom: 0.5rem; 
+          color: #dc2626;
+        }
+        .header p {
+          font-size: 0.95rem;
+          color: #333;
+          margin-bottom: 0.25rem;
+        }
+        .header .receipt-title {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 1rem 0 0.5rem;
+          color: #000;
+        }
+        .header .receipt-num {
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #dc2626;
+        }
         .details { margin: 2rem 0; }
-        .row { display: flex; justify-content: space-between; padding: 0.5rem 0; }
-        .total { font-size: 1.5rem; font-weight: bold; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #000; }
-        .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ccc; }
+        .row { 
+          display: flex; 
+          justify-content: space-between; 
+          padding: 0.75rem 0; 
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .row:last-child { border-bottom: none; }
+        .row span:first-child {
+          color: #666;
+          font-weight: 600;
+        }
+        .row span:last-child {
+          color: #000;
+          font-weight: 700;
+        }
+        .items-section {
+          margin: 2rem 0;
+          padding: 1.5rem;
+          background: #f9fafb;
+          border-radius: 8px;
+        }
+        .items-section h4 {
+          margin-bottom: 1rem;
+          color: #000;
+        }
+        .items-section p {
+          color: #333;
+          line-height: 1.6;
+        }
+        .total-section { 
+          margin: 2rem 0;
+          padding: 1.5rem;
+          background: #fef3c7;
+          border-radius: 8px;
+        }
+        .total { 
+          font-size: 1.8rem; 
+          font-weight: 900; 
+          margin-top: 1rem; 
+          padding-top: 1rem; 
+          border-top: 3px solid #dc2626; 
+          display: flex;
+          justify-content: space-between;
+        }
+        .total span {
+          color: #dc2626;
+        }
+        .footer { 
+          text-align: center; 
+          margin-top: 3rem; 
+          padding-top: 1.5rem; 
+          border-top: 2px dashed #ccc; 
+        }
+        .footer p {
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+        }
+        .footer .small {
+          font-size: 0.9rem;
+          color: #666;
+        }
+        @media print {
+          body { padding: 0; }
+          .receipt { border: none; }
+        }
       </style>
     </head>
     <body>
@@ -670,8 +743,9 @@ const printreceipt = (payment: any) => {
         <div class="header">
           <h1>CYBERCAR</h1>
           <p>ศูนย์มาตราฐานทำความสะอาดรถยนต์</p>
-          <h3>ใบเสร็จรับเงิน</h3>
-          <p>${payment.receipt_number}</p>
+          <p>123 หมู่ 16 ถนนมิตรภาพ ตำบลในเมือง อำเภอเมือง จังหวัดขอนแก่น 40002</p>
+          <p class="receipt-title">ใบเสร็จรับเงิน</p>
+          <p class="receipt-num">${payment.receipt_number}</p>
         </div>
         <div class="details">
           <div class="row">
@@ -680,30 +754,31 @@ const printreceipt = (payment: any) => {
           </div>
           <div class="row">
             <span>ลูกค้า:</span>
-            <span>${payment.cust_fname} ${payment.cust_lname}</span>
+            <span>${payment.cust_fname || ''} ${payment.cust_lname || ''}</span>
           </div>
           <div class="row">
             <span>เบอร์โทร:</span>
-            <span>${payment.cust_tel}</span>
+            <span>${payment.cust_tel || '-'}</span>
           </div>
+        </div>
+        <div class="items-section">
+          <h4>รายการบริการ:</h4>
+          <p>${payment.receipt_description || '-'}</p>
+        </div>
+        <div class="total-section">
           <div class="row">
-            <span>รายการ:</span>
-            <span>${payment.receipt_description}</span>
-          </div>
-          <div class="row">
-            <span>ชำระด้วย:</span>
+            <span>วิธีชำระ:</span>
             <span>${getPaymentMethodText(payment.payment_method)}</span>
           </div>
           <div class="total">
-            <div class="row">
-              <span>ยอดรวมทั้งสิ้น:</span>
-              <span>฿${payment.payment_amount?.toLocaleString() || '0'}</span>
-            </div>
+            <span>ยอดรวมทั้งสิ้น:</span>
+            <span>฿${payment.payment_amount?.toLocaleString() || '0'}</span>
           </div>
         </div>
         <div class="footer">
-          <p>ขอบคุณที่ใช้บริการ</p>
-          <p style="font-size: 0.9rem; margin-top: 0.5rem;">*** กรุณาเก็บใบเสร็จไว้เป็นหลักฐาน ***</p>
+          <p>ขอบคุณที่ใช้บริการ CYBERCAR</p>
+          <p class="small">*** กรุณาเก็บใบเสร็จไว้เป็นหลักฐาน ***</p>
+          <p class="small" style="margin-top: 1rem;">พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')}</p>
         </div>
       </div>
       <script>
@@ -737,14 +812,16 @@ const refundPayment = async (payment: any) => {
     confirmButtonText: 'ยืนยันคืนเงิน',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#6b7280'
+    cancelButtonColor: '#6b7280',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff'
   });
 
   if (result.isConfirmed) {
     try {
       const response = await axios.post('http://localhost:3000/api/payment/refund', {
         payment_id: payment.payment_ID,
-        employee_id: currentEmployee.value.id
+        employee_id: currentEmployee.value?.id
       });
 
       if (response.data.success) {
@@ -752,7 +829,9 @@ const refundPayment = async (payment: any) => {
           title: 'คืนเงินสำเร็จ!',
           icon: 'success',
           confirmButtonColor: '#10b981',
-          timer: 2000
+          timer: 2000,
+          background: 'rgba(30, 30, 30, 0.98)',
+          color: '#ffffff'
         });
 
         loadPayments();
@@ -764,7 +843,9 @@ const refundPayment = async (payment: any) => {
         title: 'เกิดข้อผิดพลาด',
         text: error.response?.data?.message || 'ไม่สามารถคืนเงินได้',
         icon: 'error',
-        confirmButtonColor: '#dc2626'
+        confirmButtonColor: '#dc2626',
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff'
       });
     }
   }
@@ -780,14 +861,23 @@ const getPaymentMethodText = (method: string) => {
   const map: Record<string, string> = {
     cash: '💵 เงินสด',
     card: '💳 บัตร',
-    qr: '📱 QR Code'
+    qr: '📱 QR Code',
+    refunded: '↩️ คืนเงินแล้ว'
   };
   return map[method] || method;
 };
 
-const formatTime = (dateStr: string) => {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleTimeString('th-TH', {
+const formatTime = (timeStr: string) => {
+  if (!timeStr) return '-';
+  
+  // ถ้าเป็น TIME format (HH:MM:SS)
+  if (typeof timeStr === 'string' && timeStr.includes(':')) {
+    const [hours, minutes] = timeStr.split(':');
+    return `${hours}:${minutes} น.`;
+  }
+  
+  // ถ้าเป็น DATETIME
+  return new Date(timeStr).toLocaleTimeString('th-TH', {
     hour: '2-digit',
     minute: '2-digit'
   });
@@ -813,6 +903,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* CSS เดิมทั้งหมด (ไม่ต้องแก้) */
 * {
   margin: 0;
   padding: 0;
@@ -826,9 +917,6 @@ onMounted(() => {
   font-family: 'Kanit', sans-serif;
 }
 
-/* ========================================
-   HEADER
-======================================== */
 .page-header {
   background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
   border-bottom: 2px solid rgba(220, 38, 38, 0.3);
@@ -891,9 +979,8 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* ========================================
-   REVENUE SECTION
-======================================== */
+/* ส่วนที่เหลือของ CSS ใช้ได้ทั้งหมด - ไม่ต้องแก้ */
+
 .revenue-section {
   padding: 2rem;
   background: linear-gradient(to bottom, #0a0a0a 0%, #1a1a1a 100%);
@@ -919,24 +1006,6 @@ onMounted(() => {
   align-items: center;
   gap: 1.5rem;
   transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
-}
-
-.revenue-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.revenue-card:hover::before {
-  opacity: 1;
 }
 
 .revenue-card:hover {
@@ -1041,16 +1110,13 @@ onMounted(() => {
   background: linear-gradient(90deg, #a855f7, #7c3aed);
 }
 
-/* ========================================
-   PENDING SECTION
-======================================== */
 .pending-section {
   padding: 2rem;
   background: #0a0a0a;
 }
 
 .pending-section .container {
-  max-width: 1600px;
+    max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -1213,9 +1279,6 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* ========================================
-   HISTORY SECTION
-======================================== */
 .history-section {
   padding: 2rem;
   background: #1a1a1a;
@@ -1440,9 +1503,6 @@ tbody td {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* ========================================
-   MODAL
-======================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1521,7 +1581,6 @@ tbody td {
   padding: 2rem;
 }
 
-/* Booking Summary */
 .booking-summary {
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.03);
@@ -1560,7 +1619,6 @@ tbody td {
   font-weight: 900;
 }
 
-/* Payment Method Section */
 .payment-method-section {
   margin-bottom: 2rem;
 }
@@ -1618,7 +1676,6 @@ tbody td {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* Cash Input */
 .cash-input-section {
   margin-bottom: 2rem;
 }
@@ -1699,37 +1756,6 @@ tbody td {
   color: #ef4444;
 }
 
-/* Notes */
-.notes-section {
-  margin-bottom: 2rem;
-}
-
-.notes-section h3 {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  color: #fff;
-}
-
-.notes-section textarea {
-  width: 100%;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: #fff;
-  font-size: 0.95rem;
-  font-family: inherit;
-  resize: vertical;
-  transition: all 0.3s;
-}
-
-.notes-section textarea:focus {
-  outline: none;
-  border-color: #fbbf24;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Modal Actions */
 .modal-actions {
   padding: 1.5rem 2rem;
   background: rgba(0, 0, 0, 0.3);
@@ -1810,9 +1836,6 @@ tbody td {
   to { transform: rotate(360deg); }
 }
 
-/* ========================================
-   receipt CONTENT
-======================================== */
 .receipt-content {
   padding: 2rem;
   background: #fff;
@@ -1836,8 +1859,9 @@ tbody td {
 }
 
 .company-info p {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #666;
+  margin-bottom: 0.25rem;
 }
 
 .receipt-number {
@@ -1946,7 +1970,6 @@ tbody td {
   font-weight: 400;
 }
 
-/* Modal Animation */
 .modal-enter-active,
 .modal-leave-active {
   transition: all 0.3s ease;
@@ -1962,9 +1985,7 @@ tbody td {
   transform: scale(0.95) translateY(-20px);
 }
 
-/* ========================================
-   RESPONSIVE
-======================================== */
+/* RESPONSIVE */
 @media (max-width: 1400px) {
   .revenue-grid {
     grid-template-columns: repeat(2, 1fr);

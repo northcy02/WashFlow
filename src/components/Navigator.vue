@@ -102,6 +102,11 @@
                     <span class="item-icon">👤</span>
                     <span>โปรไฟล์</span>
                   </router-link>
+                      <router-link to="/membership" @click="closeProfileMenu" class="profile-menu-item membership-link">
+      <span class="item-icon">💎</span>
+      <span>สมาชิก & คะแนน</span>
+      <span class="new-badge">NEW</span>
+    </router-link>
 
                   <router-link to="/history" @click="closeProfileMenu" class="profile-menu-item">
                     <span class="item-icon">📋</span>
@@ -273,6 +278,33 @@ watch(() => route.path, () => {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+.profile-menu-item.membership-link {
+  position: relative;
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.1), transparent);
+  border-left: 3px solid #fbbf24;
+}
+
+.profile-menu-item.membership-link:hover {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.2), transparent);
+  border-left-color: #f59e0b;
+}
+
+.new-badge {
+  margin-left: auto;
+  padding: 0.2rem 0.6rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
 }
 
 .header {

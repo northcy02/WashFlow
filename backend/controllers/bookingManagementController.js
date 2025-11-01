@@ -6,28 +6,30 @@ export const getAllBookings = (req, res) => {
   try {
     const { status, date, limit = 50 } = req.query;
 
-    let sql = `
-      SELECT 
-        b.booking_ID,
-        b.booking_date,
-        b.booking_status,
-        b.created_at,
-        c.cust_ID,
-        c.cust_fname,
-        c.cust_lname,
-        c.cust_tel,
-        p.payment_amount,
-        p.payment_method,
-        i.invoice_number,
-        i.invoice_description,
-        br.branch_name
-      FROM booking b
-      LEFT JOIN customer c ON b.cust_ID = c.cust_ID
-      LEFT JOIN payment p ON b.booking_ID = p.booking_ID
-      LEFT JOIN invoice i ON p.payment_ID = i.payment_ID
-      LEFT JOIN branch br ON b.branch_ID = br.branch_ID
-      WHERE 1=1
-    `;
+const sql = `
+  SELECT 
+    b.booking_ID,
+    b.booking_date,
+    b.booking_time,
+    b.duration,
+    b.booking_status,
+    b.created_at,
+    c.cust_ID,
+    c.cust_fname,
+    c.cust_lname,
+    c.cust_tel,
+    p.payment_amount,
+    p.payment_method,
+    r.receipt_number,        -- ✅ เปลี่ยน
+    r.receipt_description,   -- ✅ เปลี่ยน
+    br.branch_name
+  FROM booking b
+  LEFT JOIN customer c ON b.cust_ID = c.cust_ID      -- ✅ แก้
+  LEFT JOIN payment p ON b.booking_ID = p.booking_ID
+  LEFT JOIN receipt r ON p.payment_ID = r.payment_ID -- ✅ เปลี่ยน
+  LEFT JOIN branch br ON b.branch_ID = br.branch_ID
+  WHERE 1=1
+`;
 
     const params = [];
 

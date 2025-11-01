@@ -7,6 +7,7 @@ import bookingManagementRoutes from './bookingManagement.js';
 import branchRoutes from './branch.js';
 import roleRoutes from './role.js';
 import paymentRoutes from './payment.js';  // ✅ เพิ่ม Payment Routes
+import membershipRoutes from './membership.js';
 
 const router = express.Router();
 
@@ -235,6 +236,7 @@ router.use('/management/booking', bookingManagementRoutes);
 router.use('/branch', branchRoutes);
 router.use('/role', roleRoutes);
 router.use('/payment', paymentRoutes);  // ✅ เพิ่ม Payment Routes
+router.use('/membership', membershipRoutes);  // ✅ เพิ่ม
 
 // ========================================
 // 404 HANDLER

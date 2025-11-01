@@ -11,6 +11,7 @@ import CarTypes from '../pages/CarTypes.vue'
 import EmployeeDashboard from '../pages/employee/EmployeeDashboard.vue'
 import EmployeeManagement from '../pages/employee/EmployeeManagement.vue'
 import PaymentManagement from '../pages/employee/PaymentManagement.vue'
+import Membership from '@/pages/Membership.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -53,6 +54,12 @@ const routes = [
     path: '/car-types',
     name: 'CarTypes',
     component: CarTypes
+  },
+  {
+    path: '/membership',
+    nmname: 'Membership',
+    component: Membership,
+    meta: { requiresAuth: true }
   },
   
   // ========================================

@@ -1,4 +1,4 @@
-<!-- src/pages/profile.vue -->
+<!-- src/pages/Profile.vue -->
 <template>
   <div class="profile-page">
     <Navigator />
@@ -22,6 +22,13 @@
           <h1>{{ userData.fullName }}</h1>
           <p class="username">@{{ userData.username }}</p>
           <p class="member-since">สมาชิกตั้งแต่: {{ formatDate(userData.memberSince) }}</p>
+          
+          <!-- ✅ Membership Link -->
+          <router-link to="/membership" class="membership-link-profile">
+            <span class="link-icon">💎</span>
+            <span class="link-text">ดูสมาชิก & คะแนนของฉัน</span>
+            <span class="link-arrow">→</span>
+          </router-link>
         </div>
 
         <!-- Tabs -->
@@ -211,6 +218,7 @@
               <div>
                 <h3>คำเตือน</h3>
                 <p>การลบบัญชีจะไม่สามารถย้อนกลับได้ ข้อมูลทั้งหมดจะถูกลบอย่างถาวร</p>
+                <p class="warning-detail">รวมถึง: ประวัติการจอง, คะแนนสะสม, สิทธิประโยชน์สมาชิก</p>
               </div>
             </div>
 
@@ -254,7 +262,7 @@
                   class="btn-danger" 
                   :disabled="!deleteForm.confirm || isLoading"
                 >
-                  <span v-if="!isLoading">ลบบัญชีถาวร</span>
+                  <span v-if="!isLoading">🗑️ ลบบัญชีถาวร</span>
                   <span v-else class="loading">
                     <span class="spinner"></span>
                     กำลังลบ...
@@ -278,7 +286,9 @@ import Navigator from '@/components/Navigator.vue'
 
 const router = useRouter()
 
-// State
+// ========================================
+// STATE
+// ========================================
 const activeTab = ref('info')
 const isLoading = ref(false)
 const alertMessage = ref('')
@@ -292,7 +302,9 @@ const showDeletePassword = ref(false)
 const passwordError = ref('')
 const confirmPasswordError = ref('')
 
-// User Data
+// ========================================
+// USER DATA
+// ========================================
 const userData = reactive({
   id: 0,
   username: '',
@@ -304,7 +316,9 @@ const userData = reactive({
   memberSince: ''
 })
 
-// Forms
+// ========================================
+// FORMS
+// ========================================
 const profileForm = reactive({
   firstName: '',
   lastName: '',
@@ -323,36 +337,38 @@ const deleteForm = reactive({
   confirm: false
 })
 
-// Computed
+// ========================================
+// COMPUTED
+// ========================================
 const alertIcon = computed(() => {
   const icons: Record<string, string> = {
     success: '✓',
     error: '✕',
     warning: '⚠'
-  };
-  return icons[alertType.value] || '!';
+  }
+  return icons[alertType.value] || '!'
 })
 
-// Methods
+// ========================================
+// METHODS
+// ========================================
 const loadUserData = () => {
   try {
     const userStr = localStorage.getItem('user')
     const isLoggedIn = localStorage.getItem('isLoggedIn')
 
     console.log('🔍 Loading user data...')
-    console.log('User string:', userStr)
-    console.log('Is logged in:', isLoggedIn)
 
     if (!userStr || isLoggedIn !== 'true') {
-      console.log('❌ No user data or not logged in, redirecting to login')
+      console.log('❌ No user data, redirecting to login')
       router.push('/login')
       return
     }
 
     const user = JSON.parse(userStr)
-    console.log('👤 Parsed user:', user)
+    console.log('👤 User:', user)
     
-    // ✅ Set user data with fallback values
+    // Set user data
     userData.id = user.id || 0
     userData.username = user.username || ''
     userData.firstName = user.firstName || user.cust_fname || ''
@@ -362,19 +378,14 @@ const loadUserData = () => {
     userData.address = user.address || user.cust_address || ''
     userData.memberSince = user.memberSince || user.created_at || new Date().toISOString()
 
-    console.log('✅ User data loaded:', {
-      id: userData.id,
-      username: userData.username,
-      fullName: userData.fullName
-    })
+    console.log('✅ User data loaded:', userData.username)
 
-    // ✅ Set form data
+    // Set form data
     resetProfileForm()
 
   } catch (error) {
     console.error('❌ Error loading user data:', error)
     
-    // แสดง error message
     Swal.fire({
       title: 'เกิดข้อผิดพลาด',
       text: 'ไม่สามารถโหลดข้อมูลผู้ใช้ได้',
@@ -449,7 +460,9 @@ const resetPasswordForm = () => {
   showConfirmPassword.value = false
 }
 
-// Handle Update Profile
+// ========================================
+// HANDLE UPDATE PROFILE
+// ========================================
 const handleUpdateProfile = async () => {
   if (!profileForm.firstName || !profileForm.lastName) {
     showAlert('กรุณากรอกชื่อและนามสกุล', 'warning')
@@ -497,6 +510,16 @@ const handleUpdateProfile = async () => {
       window.dispatchEvent(new CustomEvent('loginStatusChanged'))
 
       showAlert('อัพเดทข้อมูลสำเร็จ!', 'success')
+      
+      await Swal.fire({
+        title: 'สำเร็จ!',
+        text: 'อัพเดทข้อมูลเรียบร้อยแล้ว',
+        icon: 'success',
+        confirmButtonColor: '#dc2626',
+        timer: 2000,
+        background: 'rgba(30, 30,        30, 30, 0.98)',
+        color: '#ffffff'
+      })
     }
 
   } catch (err: any) {
@@ -507,7 +530,9 @@ const handleUpdateProfile = async () => {
   }
 }
 
-// Handle Change Password
+// ========================================
+// HANDLE CHANGE PASSWORD
+// ========================================
 const handleChangePassword = async () => {
   passwordError.value = ''
   confirmPasswordError.value = ''
@@ -545,7 +570,7 @@ const handleChangePassword = async () => {
         color: '#ffffff'
       })
 
-      // Logout and redirect to login
+      // Logout and redirect
       localStorage.removeItem('user')
       localStorage.removeItem('isLoggedIn')
       window.dispatchEvent(new CustomEvent('loginStatusChanged'))
@@ -560,7 +585,9 @@ const handleChangePassword = async () => {
   }
 }
 
-// Handle Delete Account
+// ========================================
+// HANDLE DELETE ACCOUNT
+// ========================================
 const handleDeleteAccount = async () => {
   if (!deleteForm.confirm) {
     showAlert('กรุณายืนยันการลบบัญชี', 'warning')
@@ -570,11 +597,19 @@ const handleDeleteAccount = async () => {
   const result = await Swal.fire({
     title: 'ยืนยันการลบบัญชี',
     html: `
-      <p style="color: #ef4444; font-size: 1.1rem; margin-bottom: 1rem;">
-        ⚠️ คำเตือน
-      </p>
-      <p>การลบบัญชีจะไม่สามารถย้อนกลับได้</p>
-      <p>ข้อมูลทั้งหมดจะถูกลบอย่างถาวร</p>
+      <div style="text-align: center; padding: 1rem;">
+        <p style="color: #ef4444; font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem;">
+          ⚠️ คำเตือนสำคัญ
+        </p>
+        <p style="margin-bottom: 0.5rem;">การลบบัญชีจะไม่สามารถย้อนกลับได้</p>
+        <p style="margin-bottom: 1rem;">ข้อมูลต่อไปนี้จะถูกลบถาวร:</p>
+        <ul style="text-align: left; margin: 0 auto; max-width: 300px; color: rgba(255,255,255,0.8);">
+          <li>ประวัติการจองทั้งหมด</li>
+          <li>คะแนนสะสม และประวัติการใช้คะแนน</li>
+          <li>สิทธิประโยชน์สมาชิก</li>
+          <li>ข้อมูลส่วนตัวทั้งหมด</li>
+        </ul>
+      </div>
     `,
     icon: 'warning',
     iconColor: '#ef4444',
@@ -599,7 +634,7 @@ const handleDeleteAccount = async () => {
     if (res.data.success) {
       await Swal.fire({
         title: 'ลบบัญชีสำเร็จ',
-        text: 'ขอบคุณที่ใช้บริการ',
+        text: 'ขอบคุณที่ใช้บริการ CYBERCAR',
         icon: 'success',
         confirmButtonColor: '#dc2626',
         background: 'rgba(30, 30, 30, 0.98)',
@@ -610,7 +645,7 @@ const handleDeleteAccount = async () => {
       localStorage.removeItem('user')
       localStorage.removeItem('isLoggedIn')
       window.dispatchEvent(new CustomEvent('loginStatusChanged'))
-      router.push('/login')
+      router.push('/')
     }
 
   } catch (err: any) {
@@ -621,7 +656,9 @@ const handleDeleteAccount = async () => {
   }
 }
 
-// Lifecycle
+// ========================================
+// LIFECYCLE
+// ========================================
 onMounted(() => {
   loadUserData()
 })
@@ -641,7 +678,9 @@ onMounted(() => {
   font-family: 'Kanit', sans-serif;
 }
 
-/* Alert */
+/* ========================================
+   ALERT
+======================================== */
 .alert {
   position: fixed;
   top: 100px;
@@ -701,7 +740,20 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Main */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+/* ========================================
+   MAIN
+======================================== */
 .main {
   margin-top: 80px;
   padding: 3rem 2rem;
@@ -713,14 +765,34 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-/* Profile Header */
+/* ========================================
+   PROFILE HEADER
+======================================== */
 .profile-header {
   text-align: center;
   margin-bottom: 3rem;
-  padding: 2rem;
+  padding: 2.5rem 2rem;
   background: rgba(255, 255, 255, 0.03);
   border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.1) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .avatar-large {
@@ -737,6 +809,8 @@ onMounted(() => {
   margin: 0 auto 1.5rem;
   border: 4px solid rgba(220, 38, 38, 0.5);
   box-shadow: 0 10px 40px rgba(220, 38, 38, 0.4);
+  position: relative;
+  z-index: 1;
 }
 
 .profile-header h1 {
@@ -744,20 +818,69 @@ onMounted(() => {
   font-weight: 700;
   margin-bottom: 0.5rem;
   color: #fff;
+  position: relative;
+  z-index: 1;
 }
 
 .username {
   color: rgba(255, 255, 255, 0.6);
   font-size: 1.1rem;
   margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .member-since {
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
-/* Tabs */
+/* ✅ Membership Link */
+.membership-link-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 2rem;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+  border: 2px solid rgba(251, 191, 36, 0.4);
+  border-radius: 50px;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fbbf24;
+  transition: all 0.3s;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 5px 20px rgba(251, 191, 36, 0.2);
+}
+
+.membership-link-profile:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3));
+  border-color: #fbbf24;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(251, 191, 36, 0.4);
+}
+
+.membership-link-profile .link-icon {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.6));
+}
+
+.membership-link-profile .link-arrow {
+  font-size: 1.2rem;
+  transition: transform 0.3s;
+}
+
+.membership-link-profile:hover .link-arrow {
+  transform: translateX(5px);
+}
+
+/* ========================================
+   TABS
+======================================== */
 .tabs {
   display: flex;
   gap: 1rem;
@@ -796,7 +919,9 @@ onMounted(() => {
   font-size: 1.2rem;
 }
 
-/* Tab Content */
+/* ========================================
+   TAB CONTENT
+======================================== */
 .tab-content {
   background: rgba(255, 255, 255, 0.03);
   border: 2px solid rgba(255, 255, 255, 0.1);
@@ -811,7 +936,9 @@ onMounted(() => {
   color: #dc2626;
 }
 
-/* Form */
+/* ========================================
+   FORM
+======================================== */
 form {
   display: flex;
   flex-direction: column;
@@ -876,6 +1003,7 @@ form {
 
 .form-field small.error {
   color: #ef4444;
+  font-weight: 600;
 }
 
 /* Password Input */
@@ -1018,7 +1146,9 @@ form {
   to { transform: rotate(360deg); }
 }
 
-/* Danger Zone */
+/* ========================================
+   DANGER ZONE
+======================================== */
 .danger-zone {
   border: 2px solid rgba(239, 68, 68, 0.3);
   background: rgba(239, 68, 68, 0.05);
@@ -1036,7 +1166,8 @@ form {
 }
 
 .warning-icon {
-  font-size: 2rem;
+  font-size: 2.5rem;
+  flex-shrink: 0;
 }
 
 .warning-box h3 {
@@ -1049,32 +1180,25 @@ form {
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
   line-height: 1.5;
+  margin-bottom: 0.5rem;
 }
 
-/* Animations */
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.3s;
+.warning-detail {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-20px);
-}
-
-/* Responsive */
+/* ========================================
+   RESPONSIVE
+======================================== */
 @media (max-width: 768px) {
   .main {
     padding: 2rem 1rem;
   }
 
-  .container {
-    padding: 0;
-  }
-
   .profile-header {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
   }
 
   .avatar-large {
@@ -1087,14 +1211,21 @@ form {
     font-size: 1.5rem;
   }
 
+  .membership-link-profile {
+    width: 100%;
+    justify-content: center;
+  }
+
   .tabs {
     flex-direction: column;
     gap: 0.5rem;
+    border-bottom: none;
   }
 
   .tab {
     border-bottom: none;
     border-left: 3px solid transparent;
+    justify-content: flex-start;
   }
 
   .tab.active {
@@ -1120,6 +1251,11 @@ form {
     width: 100%;
     justify-content: center;
   }
+
+  .alert {
+    min-width: 90%;
+    max-width: 90%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1134,6 +1270,10 @@ form {
   .warning-box {
     flex-direction: column;
     text-align: center;
+  }
+
+  .warning-icon {
+    font-size: 2rem;
   }
 }
 </style>

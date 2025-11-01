@@ -13,6 +13,19 @@
             <h1>Welcome, <span class="user-name">{{ userName }}</span>! </h1>
             <p class="welcome-subtitle">ยินดีต้อนรับกลับสู่ระบบจองล้างรรถ CYBERCAR</p>
           </div>
+                  <div class="membership-mini-card" v-if="membershipInfo">
+          <router-link to="/membership" class="membership-link">
+            <div class="tier-badge" :style="{ background: getTierGradient(membershipInfo.tier_color) }">
+              <span class="tier-icon">{{ membershipInfo.tier_icon }}</span>
+              <span class="tier-name">{{ membershipInfo.tier_name }}</span>
+            </div>
+            <div class="points-display">
+              <div class="points-value">{{ membershipInfo.available_points?.toLocaleString() }}</div>
+              <div class="points-label">Points</div>
+            </div>
+            <div class="arrow">→</div>
+          </router-link>
+        </div>
           
           <!-- Quick Stats -->
           <div class="quick-stats">
@@ -37,6 +50,13 @@
                 <p>สำเร็จแล้ว</p>
               </div>
             </div>
+                      <div class="stat-box membership-stat" v-if="membershipInfo">
+            <span class="stat-icon">💎</span>
+            <div class="stat-info">
+              <h3>{{ membershipInfo.available_points || 0 }}</h3>
+              <p>คะแนนสะสม</p>
+            </div>
+          </div>
           </div>
         </div>
       </section>
@@ -320,12 +340,28 @@ const router = useRouter();
 // ✅ State
 const isCustomer = ref(false);
 const userName = ref('');
+const membershipInfo = ref<any>(null);  // ✅ เพิ่ม
 const userStats = ref<any>({
   total: 0,
   pending: 0,
   completed: 0
 });
 const recentBookings = ref<any[]>([]);
+const getTierGradient = (color: string) => {
+  return `linear-gradient(135deg, ${color}dd 0%, ${color}66 100%)`;
+};
+const loadMembershipInfo = async (customerId: number) => {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/membership/info/${customerId}`);
+    
+    if (response.data.success) {
+      membershipInfo.value = response.data.membership;
+      console.log('✅ Membership loaded:', membershipInfo.value.tier_name);
+    }
+  } catch (error) {
+    console.error('Error loading membership:', error);
+  }
+};
 
 // ✅ Load Customer Data
 const loadCustomerData = async () => {
@@ -339,12 +375,15 @@ const loadCustomerData = async () => {
       const user = JSON.parse(userStr);
       userName.value = user.fullName || user.firstName || user.username;
       
-      // Load Stats & Recent Bookings
+      // Load Stats & Recent Bookings & Membership
       await loadUserStats(user.id);
       await loadRecentBookings(user.id);
+      await loadMembershipInfo(user.id);  // ✅ เพิ่ม
     }
   }
 };
+
+
 
 // ✅ Load User Stats
 const loadUserStats = async (customerId: number) => {
@@ -471,6 +510,168 @@ onMounted(() => {
   font-weight: 900;
   margin-bottom: 1rem;
   color: #fff;
+}
+
+.membership-mini-card {
+  max-width: 1200px;
+  margin: 0 auto 2rem;
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.membership-link {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.membership-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(251, 191, 36, 0.5);
+  transform: translateX(5px);
+  box-shadow: 0 10px 40px rgba(251, 191, 36, 0.3);
+}
+
+.tier-badge {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.tier-icon {
+  font-size: 2rem;
+}
+
+.tier-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.points-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 2rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  border-right: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.points-value {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #fbbf24;
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.points-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.arrow {
+  margin-left: auto;
+  font-size: 2rem;
+  color: #fbbf24;
+  transition: transform 0.3s;
+}
+
+.membership-link:hover .arrow {
+  transform: translateX(5px);
+}
+
+/* ✅ เพิ่ม Membership Stat Box */
+.stat-box.membership-stat {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15));
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.stat-box.membership-stat:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 10px 40px rgba(251, 191, 36, 0.4);
+}
+
+.stat-box.membership-stat .stat-icon {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3));
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.stat-box.membership-stat .stat-info h3 {
+  color: #fbbf24;
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+/* ✅ Membership Action Card */
+.action-card.membership-action {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15));
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.action-card.membership-action:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(245, 158, 11, 0.25));
+  border-color: #fbbf24;
+  box-shadow: 0 15px 40px rgba(251, 191, 36, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .actions-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .membership-mini-card {
+    margin-bottom: 1.5rem;
+  }
+  
+  .membership-link {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .points-display {
+    border-left: none;
+    border-right: none;
+    border-top: 2px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 1rem 0;
+  }
+  
+  .arrow {
+    margin-left: 0;
+  }
 }
 
 .user-name {
