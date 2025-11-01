@@ -28,6 +28,8 @@ DROP TABLE IF EXISTS customer;
 DROP TABLE IF EXISTS membership_tier;
 DROP TABLE IF EXISTS service_type;
 
+create database if not exists washflow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+use washflow;
 -- ========================================
 -- 1. BRANCH
 -- ========================================
