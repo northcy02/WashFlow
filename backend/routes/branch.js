@@ -1,53 +1,61 @@
 // backend/routes/branch.js
+
 import express from 'express';
-import db from '../config/database.js';
+import {
+  getAllBranches,
+  getBranchById,
+  createBranch,
+  updateBranch,
+  deleteBranch,
+  getBranchStats,
+  getBranchesWithStats
+} from '../controllers/branchController.js';
+import { requireManager } from '../middleware/auth.js';
+
+// Protected routes
+router.post('/create', requireManager, createBranch);
+router.put('/update/:id', requireManager, updateBranch);
+router.delete('/delete/:id', requireManager, deleteBranch);
 
 const router = express.Router();
 
+// ========================================
+// PUBLIC ROUTES
+// ========================================
+
 // GET All Branches
-router.get('/all', (req, res) => {
-  console.log('📥 GET /api/branch/all');
+router.get('/all', getAllBranches);
 
-  const sql = 'SELECT * FROM branch ORDER BY branch_name';
+// GET Branches with Stats (for overview)
+router.get('/with-stats', getBranchesWithStats);
 
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('❌ Database Error:', err);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Database error' 
-      });
-    }
-    
-    console.log('✅ Loaded', results.length, 'branches');
-    res.json({ success: true, branches: results });
-  });
-});
+// GET Branch by ID
+router.get('/:id', getBranchById);
+
+// GET Branch Stats
+router.get('/:id/stats', getBranchStats);
+
+// ========================================
+// ADMIN/MANAGER ROUTES (ควรเพิ่ม auth middleware)
+// ========================================
 
 // CREATE Branch
-router.post('/create', (req, res) => {
-  const { branch_name, branch_address } = req.body;
+router.post('/create', createBranch);
 
-  if (!branch_name) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'กรุณากรอกชื่อสาขา' 
-    });
-  }
+// UPDATE Branch
+router.put('/update/:id', updateBranch);
 
-  const sql = 'INSERT INTO branch (branch_name, branch_address) VALUES (?, ?)';
-  
-  db.query(sql, [branch_name, branch_address], (err, result) => {
-    if (err) {
-      console.error('❌ Create Error:', err);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Cannot create branch' 
-      });
-    }
-    
-    console.log('✅ Created branch ID:', result.insertId);
-    res.json({ success: true, branch_id: result.insertId });
+// DELETE Branch (Soft Delete)
+router.delete('/delete/:id', deleteBranch);
+
+// ========================================
+// HEALTH CHECK
+// ========================================
+router.get('/health/check', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Branch API is running',
+    timestamp: new Date().toISOString()
   });
 });
 

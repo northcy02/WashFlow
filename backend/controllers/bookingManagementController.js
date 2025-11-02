@@ -1,38 +1,45 @@
 // backend/controllers/bookingManagementController.js
 import db from '../config/database.js';
 
+
+// backend/controllers/bookingManagementController.js
+
 export const getAllBookings = (req, res) => {
   try {
-    const requestStatus = req.query.status || null;
-    const requestDate = req.query.date || null;
-    const requestLimit = req.query.limit ? Number(req.query.limit) : 50;
+    const { status, date, branch_id, limit = 50 } = req.query;  // ✅ เพิ่ม branch_id
 
-    console.log('📋 GET ALL BOOKINGS');
-    console.log('Filters:', { requestStatus, requestDate, requestLimit });
+    console.log('📥 GET ALL BOOKINGS');
+    console.log('Query params:', { status, date, branch_id, limit });
 
-    let sqlQuery = `
+    let sql = `
       SELECT 
         b.booking_ID,
         b.booking_date,
         b.booking_time,
-        b.duration,
+        COALESCE(b.duration, 30) as duration,
         b.booking_status,
-        b.subtotal,
-        b.membership_discount,
-        b.points_used,
-        b.final_amount,
-        b.points_earned,
+        COALESCE(b.subtotal, 0) as subtotal,
+        COALESCE(b.membership_discount, 0) as membership_discount,
+        COALESCE(b.points_used, 0) as points_used,
+        COALESCE(b.final_amount, 0) as final_amount,
+        COALESCE(b.points_earned, 0) as points_earned,
         b.created_at,
+        b.branch_ID,  -- ✅ เพิ่ม branch_ID
+        
         c.cust_ID,
-        c.cust_fname,
-        c.cust_lname,
-        c.cust_tel,
-        p.payment_amount,
+        COALESCE(c.cust_fname, 'N/A') as cust_fname,
+        COALESCE(c.cust_lname, '') as cust_lname,
+        COALESCE(c.cust_tel, '-') as cust_tel,
+        
+        COALESCE(p.payment_amount, 0) as payment_amount,
         p.payment_method,
         p.payment_status,
-        br.branch_name,
+        
+        COALESCE(br.branch_name, 'ไม่ระบุ') as branch_name,
+        
         r.receipt_number,
-        r.receipt_description
+        COALESCE(r.receipt_description, '-') as receipt_description
+        
       FROM booking b
       LEFT JOIN customer c ON b.cust_ID = c.cust_ID
       LEFT JOIN payment p ON b.booking_ID = p.booking_ID
@@ -41,37 +48,50 @@ export const getAllBookings = (req, res) => {
       WHERE 1=1
     `;
 
-    const queryParams = [];
+    const params = [];
 
-    if (requestStatus) {
-      sqlQuery += ' AND b.booking_status = ?';
-      queryParams.push(requestStatus);
+    // ✅ Filter by Status
+    if (status) {
+      sql += ' AND b.booking_status = ?';
+      params.push(status);
     }
 
-    if (requestDate) {
-      sqlQuery += ' AND DATE(b.booking_date) = ?';
-      queryParams.push(requestDate);
+    // ✅ Filter by Date
+    if (date) {
+      sql += ' AND DATE(b.booking_date) = ?';
+      params.push(date);
     }
 
-    sqlQuery += ' ORDER BY b.booking_date DESC, b.created_at DESC LIMIT ?';
-    queryParams.push(requestLimit);
+    // ✅ Filter by Branch (สำคัญ!)
+    if (branch_id) {
+      sql += ' AND b.branch_ID = ?';
+      params.push(parseInt(branch_id));
+      console.log(`   🏢 Filtering by branch: ${branch_id}`);
+    }
 
-    console.log('SQL Preview:', sqlQuery.substring(0, 100));
-    console.log('Parameters:', queryParams);
+    sql += ' ORDER BY b.booking_date DESC, b.created_at DESC LIMIT ?';
+    params.push(parseInt(limit));
 
-    db.query(sqlQuery, queryParams, (error, results) => {
-      if (error) {
-        console.error('Database Error:', error);
+    console.log('📝 Final SQL with params:', params);
+
+    db.query(sql, params, (err, results) => {
+      if (err) {
+        console.error('❌ DATABASE ERROR:', err);
         return res.status(500).json({
           success: false,
-          message: 'Database error',
-          error: error.message
+          message: 'เกิดข้อผิดพลาดในการดึงข้อมูล',
+          error: process.env.NODE_ENV === 'development' ? err.sqlMessage : undefined
         });
       }
 
-      console.log('Found bookings:', results.length);
+      console.log('✅ Query Success!');
+      console.log(`   Found ${results.length} bookings`);
 
-      return res.json({
+      if (results.length > 0) {
+        console.log('   First booking branch:', results[0].branch_name);
+      }
+
+      res.json({
         success: true,
         bookings: results,
         total: results.length
@@ -79,11 +99,11 @@ export const getAllBookings = (req, res) => {
     });
 
   } catch (error) {
-    console.error('Server Error:', error);
-    return res.status(500).json({
+    console.error('❌ SERVER ERROR:', error);
+    res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'เกิดข้อผิดพลาดในเซิร์ฟเวอร์',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
