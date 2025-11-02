@@ -92,6 +92,12 @@
         <div class="section-header">
           <h2>รายการจองล่าสุด</h2>
           <div class="filters">
+            <!-- ✅ Refresh Button -->
+            <button @click="loadBookings" class="btn-refresh" :disabled="isLoadingBookings">
+              <span v-if="!isLoadingBookings">🔄 รีเฟรช</span>
+              <span v-else>⏳ กำลังโหลด...</span>
+            </button>
+            
             <select v-model="filterStatus" @change="loadBookings">
               <option value="">ทั้งหมด</option>
               <option value="pending">รอดำเนินการ</option>
@@ -117,17 +123,41 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="booking in bookings" :key="booking.booking_ID">
+              <!-- ✅ Loading State -->
+              <tr v-if="isLoadingBookings">
+                <td colspan="7" style="text-align: center; padding: 3rem;">
+                  <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 1rem; color: rgba(255,255,255,0.7);">กำลังโหลด...</p>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ✅ Empty State -->
+              <tr v-else-if="bookings.length === 0">
+                <td colspan="7" style="text-align: center; padding: 3rem;">
+                  <div class="empty-state">
+                    <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📭</div>
+                    <p style="font-size: 1.1rem; color: rgba(255,255,255,0.7); margin-bottom: 0.5rem;">ไม่มีรายการจอง</p>
+                    <small style="color: rgba(255,255,255,0.5);">
+                      {{ filterStatus ? `ไม่มีรายการสถานะ "${getStatusText(filterStatus)}"` : 'ยังไม่มีการจองในระบบ' }}
+                    </small>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ✅ Data Rows -->
+              <tr v-else v-for="booking in bookings" :key="booking.booking_ID">
                 <td>#{{ booking.booking_ID }}</td>
                 <td>
                   <div class="customer-info">
-                    <strong>{{ booking.cust_fname }} {{ booking.cust_lname }}</strong>
-                    <small>{{ booking.cust_tel }}</small>
+                    <strong>{{ booking.cust_fname || 'N/A' }} {{ booking.cust_lname || '' }}</strong>
+                    <small>{{ booking.cust_tel || '-' }}</small>
                   </div>
                 </td>
                 <td>{{ formatDate(booking.booking_date) }}</td>
-                <td>{{ extractServices(booking.invoice_description) }}</td>
-                <td class="price">฿{{ booking.payment_amount }}</td>
+                <td>{{ extractServices(booking.receipt_description) }}</td>
+                <td class="price">฿{{ booking.payment_amount?.toLocaleString() || '0' }}</td>
                 <td>
                   <span class="status-badge" :class="booking.booking_status">
                     {{ getStatusText(booking.booking_status) }}
@@ -174,15 +204,26 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
+
+// ========================================
+// STATE
+// ========================================
 const employeeName = ref('');
 const employeeRole = ref('');
 const employeeId = ref(0);
 const stats = ref<any>({});
 const bookings = ref<any[]>([]);
 const filterStatus = ref('');
+const isLoadingBookings = ref(false);
 
+// ========================================
+// COMPUTED
+// ========================================
 const isManager = computed(() => employeeRole.value === 'Manager');
 
+// ========================================
+// METHODS
+// ========================================
 const loadEmployeeData = () => {
   const empStr = localStorage.getItem('employee');
   if (!empStr) {
@@ -204,28 +245,61 @@ const loadEmployeeData = () => {
 
 const loadStats = async () => {
   try {
+    console.log('📊 Loading stats...');
+    
     const response = await axios.get('http://localhost:3000/api/management/booking/stats');
+    
     if (response.data.success) {
       stats.value = response.data.stats;
+      console.log('✅ Stats loaded:', stats.value);
     }
-  } catch (error) {
-    console.error('Error loading stats:', error);
+  } catch (error: any) {
+    console.error('❌ Error loading stats:', error);
+    console.error('Response:', error.response?.data);
   }
 };
 
 const loadBookings = async () => {
   try {
+    isLoadingBookings.value = true;
+    
     const params: any = {};
     if (filterStatus.value) {
       params.status = filterStatus.value;
     }
 
+    console.log('📥 Loading bookings with params:', params);
+
     const response = await axios.get('http://localhost:3000/api/management/booking/all', { params });
+    
+    console.log('📦 Response:', response.data);
+
     if (response.data.success) {
       bookings.value = response.data.bookings;
+      console.log('✅ Loaded bookings:', bookings.value.length);
+      
+      if (bookings.value.length > 0) {
+        console.log('📄 First booking:', bookings.value[0]);
+      } else {
+        console.log('⚠️ No bookings found');
+      }
     }
-  } catch (error) {
-    console.error('Error loading bookings:', error);
+  } catch (error: any) {
+    console.error('❌ Error loading bookings:', error);
+    console.error('Response:', error.response?.data);
+    
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด',
+      text: error.response?.data?.message || 'ไม่สามารถโหลดข้อมูลได้',
+      icon: 'error',
+      confirmButtonColor: '#dc2626',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    });
+    
+    bookings.value = [];
+  } finally {
+    isLoadingBookings.value = false;
   }
 };
 
@@ -238,68 +312,152 @@ const confirmBooking = async (bookingId: number) => {
     confirmButtonText: 'ยืนยัน',
     cancelButtonText: 'ยกเลิก',
     confirmButtonColor: '#10b981',
-    cancelButtonColor: '#6b7280'
+    cancelButtonColor: '#6b7280',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff'
   });
 
   if (result.isConfirmed) {
     try {
-      await axios.put(`http://localhost:3000/api/management/booking/status/${bookingId}`, {
-        status: 'confirmed',
-        employee_id: employeeId.value
-      });
+      const response = await axios.put(
+        `http://localhost:3000/api/management/booking/status/${bookingId}`, 
+        {
+          status: 'confirmed',
+          employee_id: employeeId.value
+        }
+      );
 
-      Swal.fire('สำเร็จ!', 'ยืนยันการจองแล้ว', 'success');
-      loadBookings();
-      loadStats();
-    } catch (error) {
-      Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถยืนยันได้', 'error');
+      if (response.data.success) {
+        await Swal.fire({
+          title: 'สำเร็จ!',
+          text: 'ยืนยันการจองแล้ว',
+          icon: 'success',
+          confirmButtonColor: '#10b981',
+          timer: 2000,
+          background: 'rgba(30, 30, 30, 0.98)',
+          color: '#ffffff'
+        });
+        
+        loadBookings();
+        loadStats();
+      }
+    } catch (error: any) {
+      console.error('❌ Error confirming:', error);
+      
+      Swal.fire({
+        title: 'เกิดข้อผิดพลาด',
+        text: error.response?.data?.message || 'ไม่สามารถยืนยันได้',
+        icon: 'error',
+        confirmButtonColor: '#dc2626',
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff'
+      });
     }
   }
 };
 
 const startService = async (bookingId: number) => {
   try {
-    await axios.put(`http://localhost:3000/api/management/booking/status/${bookingId}`, {
-      status: 'in_progress',
-      employee_id: employeeId.value
-    });
+    const response = await axios.put(
+      `http://localhost:3000/api/management/booking/status/${bookingId}`, 
+      {
+        status: 'in_progress',
+        employee_id: employeeId.value
+      }
+    );
 
-    Swal.fire('เริ่มบริการ!', 'เปลี่ยนสถานะเป็นกำลังดำเนินการ', 'success');
-    loadBookings();
-    loadStats();
-  } catch (error) {
-    Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเริ่มบริการได้', 'error');
+    if (response.data.success) {
+      await Swal.fire({
+        title: 'เริ่มบริการ!',
+        text: 'เปลี่ยนสถานะเป็นกำลังดำเนินการ',
+        icon: 'success',
+        confirmButtonColor: '#3b82f6',
+        timer: 2000,
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff'
+      });
+      
+      loadBookings();
+      loadStats();
+    }
+  } catch (error: any) {
+    console.error('❌ Error starting:', error);
+    
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด',
+      text: error.response?.data?.message || 'ไม่สามารถเริ่มบริการได้',
+      icon: 'error',
+      confirmButtonColor: '#dc2626',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    });
   }
 };
 
 const completeService = async (bookingId: number) => {
   try {
-    await axios.put(`http://localhost:3000/api/management/booking/status/${bookingId}`, {
-      status: 'completed',
-      employee_id: employeeId.value
-    });
+    const response = await axios.put(
+      `http://localhost:3000/api/management/booking/status/${bookingId}`, 
+      {
+        status: 'completed',
+        employee_id: employeeId.value
+      }
+    );
 
-    Swal.fire('เสร็จสิ้น!', 'บริการเสร็จสมบูรณ์', 'success');
-    loadBookings();
-    loadStats();
-  } catch (error) {
-    Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถทำรายการได้', 'error');
+    if (response.data.success) {
+      await Swal.fire({
+        title: 'เสร็จสิ้น! 🎉',
+        html: `
+          <div style="padding: 1rem;">
+            <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">บริการเสร็จสมบูรณ์</p>
+            <p style="color: #10b981; font-weight: 600;">ลูกค้าได้รับคะแนนแล้ว</p>
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+        confirmButtonText: 'ตกลง',
+        background: 'rgba(30, 30, 30, 0.98)',
+        color: '#ffffff'
+      });
+      
+      loadBookings();
+      loadStats();
+    }
+  } catch (error: any) {
+    console.error('❌ Error completing:', error);
+    
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด',
+      text: error.response?.data?.message || 'ไม่สามารถทำรายการได้',
+      icon: 'error',
+      confirmButtonColor: '#dc2626',
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    });
   }
 };
 
 const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  if (!dateStr) return '-';
+  
+  try {
+    return new Date(dateStr).toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    return '-';
+  }
 };
 
 const extractServices = (description: string) => {
-  const match = description?.match(/บริการ: (.+)/);
-  return match ? match[1] : '-';
+  if (!description) return '-';
+  
+  const match = description.match(/บริการ: (.+)/);
+  return match ? match[1] : description;
 };
 
 const getStatusText = (status: string) => {
@@ -320,16 +478,32 @@ const handleLogout = async () => {
     showCancelButton: true,
     confirmButtonText: 'ออกจากระบบ',
     cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: '#dc2626'
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    background: 'rgba(30, 30, 30, 0.98)',
+    color: '#ffffff'
   });
 
   if (result.isConfirmed) {
     localStorage.removeItem('employee');
     localStorage.removeItem('isEmployeeLoggedIn');
+    
+    await Swal.fire({
+      title: 'ออกจากระบบสำเร็จ',
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false,
+      background: 'rgba(30, 30, 30, 0.98)',
+      color: '#ffffff'
+    });
+    
     router.push('/login');
   }
 };
 
+// ========================================
+// LIFECYCLE
+// ========================================
 onMounted(() => {
   loadEmployeeData();
   loadStats();
@@ -642,6 +816,39 @@ onMounted(() => {
   color: #fff;
 }
 
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ✅ Refresh Button */
+.btn-refresh {
+  padding: 0.8rem 1.2rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  color: #10b981;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .filters select {
   padding: 0.8rem 1.2rem;
   background: rgba(255, 255, 255, 0.05);
@@ -821,6 +1028,33 @@ tbody td {
 }
 
 /* ========================================
+   LOADING & EMPTY STATE
+======================================== */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #dc2626;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  padding: 2rem;
+}
+
+/* ========================================
    RESPONSIVE
 ======================================== */
 @media (max-width: 1024px) {
@@ -856,6 +1090,16 @@ tbody td {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+  }
+
+  .filters {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .btn-refresh,
+  .filters select {
+    width: 100%;
   }
 
   .bookings-table {

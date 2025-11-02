@@ -610,3 +610,42 @@ SELECT '  cashier1 / cashier123 (Cashier)' as Account;
 SELECT '  cleaner1 / cleaner123 (Cleaner)' as Account;
 SELECT '' as '';
 SELECT '========================================' as '';
+
+-- ปัญหา: ใช้ชื่อ column ไม่สม่ำเสมอ (pos_name vs role_name)
+-- แก้ไข: ใช้ lowercase ทั้งหมด
+
+-- แก้ไข employee_position table
+ALTER TABLE employee_position 
+CHANGE COLUMN pos_name pos_name VARCHAR(100) NOT NULL;
+
+-- ตรวจสอบ
+SHOW COLUMNS FROM employee_position;
+SHOW COLUMNS FROM employee;
+
+-- อัปเดต branch table ให้มี latitude, longitude
+ALTER TABLE branch
+ADD COLUMN latitude DECIMAL(10, 7) NULL COMMENT 'Latitude for map',
+ADD COLUMN longitude DECIMAL(10, 7) NULL COMMENT 'Longitude for map',
+ADD COLUMN map_url VARCHAR(500) NULL COMMENT 'Google Maps URL';
+
+-- อัปเดตข้อมูล branches (ตัวอย่าง)
+UPDATE branch SET 
+    latitude = 13.7465, 
+    longitude = 100.5346,
+    map_url = 'https://maps.google.com/?q=13.7465,100.5346'
+WHERE branch_ID = 1;
+
+UPDATE branch SET 
+    latitude = 13.6686, 
+    longitude = 100.6040,
+    map_url = 'https://maps.google.com/?q=13.6686,100.6040'
+WHERE branch_ID = 2;
+
+UPDATE branch SET 
+    latitude = 14.0208, 
+    longitude = 100.5953,
+    map_url = 'https://maps.google.com/?q=14.0208,100.5953'
+WHERE branch_ID = 3;
+
+-- Verify
+SELECT branch_ID, branch_name, latitude, longitude, map_url FROM branch;

@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/all', (req, res) => {
   console.log('📥 GET /api/role/all');
 
-  const sql = 'SELECT pos_ID as Role_ID, pos_name as Role_name, pos_salary as salary FROM employee_position ORDER BY pos_name';
+  const sql = 'SELECT pos_ID as Role_ID, pos_name as role_name, pos_salary as salary FROM employee_position ORDER BY pos_name';
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -23,15 +23,15 @@ router.get('/all', (req, res) => {
 
 // CREATE Position (แทน Role)
 router.post('/create', (req, res) => {
-  const { Role_name, salary } = req.body;
+  const { role_name, salary } = req.body;
 
-  if (!Role_name || !salary) {
+  if (!role_name || !salary) {
     return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
   }
 
   const sql = 'INSERT INTO employee_position (pos_name, pos_salary) VALUES (?, ?)';
   
-  db.query(sql, [Role_name, salary], (err, result) => {
+  db.query(sql, [role_name, salary], (err, result) => {
     if (err) {
       console.error('❌ Create Error:', err);
       return res.status(500).json({ success: false, message: 'Cannot create role' });

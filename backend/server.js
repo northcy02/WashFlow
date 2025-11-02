@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes/index.js';
 import db from './config/database.js';
+import branchRoutes from './routes/branchRoutes.js';
 
 // โหลดค่าตั้งค่าจาก .env
 dotenv.config();
@@ -17,6 +18,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/api/branch', branchRoutes);
 
 // Routes
 app.use('/api', routes);

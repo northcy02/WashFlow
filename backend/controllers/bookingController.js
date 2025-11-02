@@ -129,42 +129,6 @@ const calculateMembershipBenefits = async (connection, customer_id, subtotal) =>
 };
 
 // ========================================
-// HELPER: Award Points
-// ========================================
-const awardPoints = async (connection, customer_id, booking_id, amount, multiplier) => {
-  try {
-    // Calculate points (10 Baht = 1 Point * multiplier)
-    const basePoints = Math.floor(amount / 10);
-    const points = Math.floor(basePoints * multiplier);
-
-    if (points <= 0) return 0;
-
-    // Add points to customer
-    await connection.query(`
-      UPDATE customer 
-      SET total_points = total_points + ?,
-          available_points = available_points + ?
-      WHERE cust_ID = ?
-    `, [points, points, customer_id]);
-
-    // Record transaction
-    await connection.query(`
-      INSERT INTO point_transaction 
-      (cust_ID, booking_ID, transaction_type, points, description, related_amount)
-      VALUES (?, ?, 'earn', ?, ?, ?)
-    `, [customer_id, booking_id, points, `Earned from booking #${booking_id}`, amount]);
-
-    console.log(`✅ Awarded ${points} points to customer ${customer_id}`);
-    
-    return points;
-
-  } catch (error) {
-    console.error('❌ Error awarding points:', error);
-    return 0;
-  }
-};
-
-// ========================================
 // CREATE BOOKING
 // ========================================
 export const createBooking = async (req, res) => {
@@ -184,16 +148,27 @@ export const createBooking = async (req, res) => {
     services,
     payment_method,
     total_amount,
-    points_to_use = 0  // ✅ รับ points ที่ต้องการใช้
+    points_to_use = 0  // ✅ Default to 0
   } = req.body;
 
-  // Validation
+  // ========================================
+  // VALIDATION
+  // ========================================
   if (!customer_id || !branch_id || !booking_date || !booking_time || 
       !vehicle_type || !services || services.length === 0 || !payment_method) {
-    console.log('❌ Validation Failed');
+    console.log('❌ Validation Failed - Missing required fields');
     return res.status(400).json({
       success: false,
-      message: 'ข้อมูลไม่ครบถ้วน'
+      message: 'ข้อมูลไม่ครบถ้วน',
+      required: ['customer_id', 'branch_id', 'booking_date', 'booking_time', 'vehicle_type', 'services', 'payment_method']
+    });
+  }
+
+  // Validate points_to_use
+  if (points_to_use < 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'จำนวนคะแนนไม่ถูกต้อง'
     });
   }
 
@@ -205,11 +180,87 @@ export const createBooking = async (req, res) => {
     await connection.beginTransaction();
     console.log('🔄 Transaction Started');
 
-    // Calculate service duration
-    const serviceDuration = duration || await calculateServiceDuration(connection, services);
-    console.log(`⏱️ Total service duration: ${serviceDuration} minutes`);
+    // ========================================
+    // ✅ 1. CHECK BRANCH EXISTS
+    // ========================================
+    console.log('1️⃣ Checking branch...');
+    const [branches] = await connection.query(
+      'SELECT branch_ID, branch_name FROM branch WHERE branch_ID = ? AND is_active = TRUE',
+      [branch_id]
+    );
 
-    // Check booking conflict
+    if (branches.length === 0) {
+      await connection.rollback();
+      console.log('❌ Branch not found or inactive');
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบสาขาที่เลือก หรือสาขาปิดให้บริการ'
+      });
+    }
+
+    console.log(`   ✅ Branch: ${branches[0].branch_name}`);
+
+    // ========================================
+    // ✅ 2. VALIDATE CUSTOMER
+    // ========================================
+    console.log('2️⃣ Validating customer...');
+    const [customers] = await connection.query(
+      'SELECT cust_ID, cust_fname, cust_lname FROM customer WHERE cust_ID = ?',
+      [customer_id]
+    );
+
+    if (customers.length === 0) {
+      await connection.rollback();
+      console.log('❌ Customer not found');
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลลูกค้า'
+      });
+    }
+
+    console.log(`   ✅ Customer: ${customers[0].cust_fname} ${customers[0].cust_lname}`);
+
+    // ========================================
+    // ✅ 3. VALIDATE SERVICE TYPES
+    // ========================================
+    console.log('3️⃣ Validating services...');
+    const [serviceTypes] = await connection.query(
+      'SELECT serviceType_ID, serviceType_Name, serviceType_BasePrice FROM service_type WHERE serviceType_Name IN (?) AND is_active = TRUE',
+      [services]
+    );
+
+    if (serviceTypes.length === 0) {
+      await connection.rollback();
+      console.log('❌ No valid services found');
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบบริการที่เลือก'
+      });
+    }
+
+    if (serviceTypes.length !== services.length) {
+      await connection.rollback();
+      const foundServices = serviceTypes.map(s => s.serviceType_Name);
+      const missingServices = services.filter(s => !foundServices.includes(s));
+      console.log('❌ Some services not found:', missingServices);
+      return res.status(404).json({
+        success: false,
+        message: `ไม่พบบริการ: ${missingServices.join(', ')}`
+      });
+    }
+
+    console.log(`   ✅ Found ${serviceTypes.length} services`);
+
+    // ========================================
+    // 4. CALCULATE SERVICE DURATION
+    // ========================================
+    const serviceDuration = duration || await calculateServiceDuration(connection, services);
+    console.log(`4️⃣ Total service duration: ${serviceDuration} minutes`);
+
+    // ========================================
+    // 5. CHECK BOOKING CONFLICT
+    // ========================================
+    console.log('5️⃣ Checking time slot availability...');
     const conflictCheck = await checkBookingConflict(
       connection,
       branch_id,
@@ -228,7 +279,12 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // ✅ Calculate Membership Benefits
+    console.log('   ✅ Time slot available');
+
+    // ========================================
+    // 6. CALCULATE MEMBERSHIP BENEFITS
+    // ========================================
+    console.log('6️⃣ Calculating membership benefits...');
     const membershipBenefits = await calculateMembershipBenefits(
       connection, 
       customer_id, 
@@ -237,16 +293,20 @@ export const createBooking = async (req, res) => {
 
     console.log('💎 Membership Benefits:', membershipBenefits);
 
-    // ✅ Calculate Points Discount
+    // ========================================
+    // 7. CALCULATE POINTS DISCOUNT
+    // ========================================
     let points_discount = 0;
     let actual_points_used = 0;
 
     if (points_to_use > 0) {
+      console.log(`7️⃣ Processing points redemption: ${points_to_use} points`);
+
       if (points_to_use > membershipBenefits.available_points) {
         await connection.rollback();
         return res.status(400).json({
           success: false,
-          message: 'คะแนนไม่เพียงพอ'
+          message: `คะแนนไม่เพียงพอ (มี ${membershipBenefits.available_points} คะแนน)`
         });
       }
 
@@ -254,13 +314,15 @@ export const createBooking = async (req, res) => {
       points_discount = Math.floor(points_to_use * 0.1);
       actual_points_used = points_to_use;
 
-      console.log(`⭐ Using ${actual_points_used} points = ฿${points_discount} discount`);
+      console.log(`   ⭐ Using ${actual_points_used} points = ฿${points_discount} discount`);
     }
 
-    // ✅ Calculate Final Amount
+    // ========================================
+    // 8. CALCULATE FINAL AMOUNT
+    // ========================================
     const subtotal = parseFloat(total_amount);
     const membership_discount = membershipBenefits.membership_discount;
-    const final_amount = subtotal - membership_discount - points_discount;
+    const final_amount = Math.max(0, subtotal - membership_discount - points_discount);
 
     console.log('💰 Pricing Breakdown:');
     console.log(`   Subtotal: ฿${subtotal}`);
@@ -268,8 +330,10 @@ export const createBooking = async (req, res) => {
     console.log(`   Points Discount (${actual_points_used} pts): -฿${points_discount}`);
     console.log(`   Final Amount: ฿${final_amount}`);
 
-    // 1️⃣ Get/Create Vehicle Type
-    console.log('1️⃣ Checking vehicle_type:', vehicle_type);
+    // ========================================
+    // 9. GET/CREATE VEHICLE TYPE
+    // ========================================
+    console.log('9️⃣ Processing vehicle type:', vehicle_type);
     const [vtypes] = await connection.query(
       'SELECT vehicletype_ID FROM vehicle_type WHERE vehicletype_name = ?',
       [vehicle_type]
@@ -288,8 +352,10 @@ export const createBooking = async (req, res) => {
       console.log('   ✅ Found vehicle_type ID:', vtypeId);
     }
 
-    // 2️⃣ Create/Find Vehicle
-    console.log('2️⃣ Checking vehicle...');
+    // ========================================
+    // 10. CREATE/FIND VEHICLE
+    // ========================================
+    console.log('🔟 Processing vehicle...');
     let vehicleId;
     
     if (vehicle_plate) {
@@ -319,21 +385,23 @@ export const createBooking = async (req, res) => {
       console.log('   ✅ Created temp vehicle ID:', vehicleId);
     }
 
-    // 3️⃣ Create Booking
-    console.log('3️⃣ Creating booking...');
+    // ========================================
+    // 11. CREATE BOOKING
+    // ========================================
+    console.log('1️⃣1️⃣ Creating booking...');
     const bookingDateTime = `${booking_date} ${booking_time}:00`;
     
     const [bookingResult] = await connection.query(`
       INSERT INTO booking 
-      (booking_date, booking_time, duration, booking_status, membership_discount, points_used, subtotal, final_amount, cust_ID, branch_ID) 
+      (booking_date, booking_time, duration, booking_status, subtotal, membership_discount, points_used, final_amount, cust_ID, branch_ID) 
       VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
     `, [
       bookingDateTime,
       booking_time,
       serviceDuration,
+      subtotal,
       membership_discount,
       actual_points_used,
-      subtotal,
       final_amount,
       customer_id,
       branch_id
@@ -342,8 +410,12 @@ export const createBooking = async (req, res) => {
     const bookingId = bookingResult.insertId;
     console.log('   ✅ Created booking ID:', bookingId);
 
-    // ✅ Deduct Points (if used)
+    // ========================================
+    // 12. DEDUCT POINTS (if used)
+    // ========================================
     if (actual_points_used > 0) {
+      console.log('1️⃣2️⃣ Deducting points...');
+      
       await connection.query(`
         UPDATE customer 
         SET available_points = available_points - ?
@@ -365,8 +437,10 @@ export const createBooking = async (req, res) => {
       console.log(`   ✅ Deducted ${actual_points_used} points`);
     }
 
-    // 4️⃣ Create Payment
-    console.log('4️⃣ Creating payment...');
+    // ========================================
+    // 13. CREATE PAYMENT
+    // ========================================
+    console.log('1️⃣3️⃣ Creating payment...');
     const [paymentResult] = await connection.query(
       'INSERT INTO payment (payment_amount, payment_method, payment_status, booking_ID) VALUES (?, ?, ?, ?)',
       [final_amount, payment_method, 'pending', bookingId]
@@ -374,8 +448,10 @@ export const createBooking = async (req, res) => {
     const paymentId = paymentResult.insertId;
     console.log('   ✅ Created payment ID:', paymentId);
 
-    // 5️⃣ Create Receipt
-    console.log('5️⃣ Creating receipt...');
+    // ========================================
+    // 14. CREATE RECEIPT
+    // ========================================
+    console.log('1️⃣4️⃣ Creating receipt...');
     const receiptNumber = generateReceiptNumber();
     const receiptDesc = `จองบริการล้างรถ - ${vehicle_type} | บริการ: ${services.join(', ')}`;
     
@@ -385,8 +461,10 @@ export const createBooking = async (req, res) => {
     );
     console.log('   ✅ Created receipt:', receiptNumber);
 
-    // 6️⃣ Create Service
-    console.log('6️⃣ Creating service...');
+    // ========================================
+    // 15. CREATE SERVICE
+    // ========================================
+    console.log('1️⃣5️⃣ Creating service...');
     const [serviceResult] = await connection.query(
       'INSERT INTO service (service_status, booking_ID, vehicle_ID) VALUES (?, ?, ?)',
       ['pending', bookingId, vehicleId]
@@ -394,19 +472,11 @@ export const createBooking = async (req, res) => {
     const serviceId = serviceResult.insertId;
     console.log('   ✅ Created service ID:', serviceId);
 
-    // 7️⃣ Create Service Details
-    console.log('7️⃣ Creating service details...');
-    const [serviceTypes] = await connection.query(
-      'SELECT serviceType_ID, serviceType_Name, serviceType_BasePrice FROM service_type WHERE serviceType_Name IN (?)',
-      [services]
-    );
-
-    console.log('   Found service types:', serviceTypes.length);
+    // ========================================
+    // 16. CREATE SERVICE DETAILS
+    // ========================================
+    console.log('1️⃣6️⃣ Creating service details...');
     
-    if (serviceTypes.length === 0) {
-      throw new Error(`ไม่พบบริการที่ต้องการ: ${services.join(', ')}`);
-    }
-
     // Find employee (pos_ID = 3 คือ Cleaner)
     const [employees] = await connection.query(
       'SELECT emp_ID FROM employee WHERE pos_ID = 3 AND is_active = TRUE LIMIT 1'
@@ -422,7 +492,9 @@ export const createBooking = async (req, res) => {
       console.log(`   ✅ Added: ${serviceType.serviceType_Name}`);
     }
 
-    // ✅ Update booking with points_earned (will be awarded when completed)
+    // ========================================
+    // 17. CALCULATE POINTS TO EARN
+    // ========================================
     const points_earned = Math.floor((final_amount / 10) * membershipBenefits.points_multiplier);
     
     await connection.query(
@@ -430,12 +502,18 @@ export const createBooking = async (req, res) => {
       [points_earned, bookingId]
     );
 
-    console.log(`   ✅ Points to be earned: ${points_earned} (when completed)`);
+    console.log(`1️⃣7️⃣ Points to be earned: ${points_earned} (when completed)`);
 
+    // ========================================
+    // COMMIT TRANSACTION
+    // ========================================
     await connection.commit();
     console.log('✅ Transaction Committed!');
     console.log('======================================');
 
+    // ========================================
+    // SUCCESS RESPONSE
+    // ========================================
     res.json({
       success: true,
       message: 'จองบริการสำเร็จ!',
@@ -461,9 +539,12 @@ export const createBooking = async (req, res) => {
     }
     
     console.error('❌ Booking Error:', error);
+    
+    // Detailed error response
     res.status(500).json({
       success: false,
-      message: error.message || 'เกิดข้อผิดพลาด'
+      message: error.message || 'เกิดข้อผิดพลาดในการจองบริการ',
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   } finally {
     if (connection) {
@@ -488,10 +569,10 @@ export const getBookingHistory = async (req, res) => {
         b.booking_time,
         b.duration,
         b.booking_status,
+        b.subtotal,
         b.membership_discount,
         b.points_earned,
         b.points_used,
-        b.subtotal,
         b.final_amount,
         p.payment_amount,
         p.payment_method,
@@ -532,7 +613,7 @@ export const getBookingHistory = async (req, res) => {
 };
 
 // ========================================
-// GET ALL ACTIVE BOOKINGS (สำหรับเช็คเวลา)
+// GET ALL ACTIVE BOOKINGS
 // ========================================
 export const getAllActiveBookings = async (req, res) => {
   try {

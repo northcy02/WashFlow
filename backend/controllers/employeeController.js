@@ -27,16 +27,17 @@ export const login = (req, res) => {
       e.emp_password as password,
       e.emp_address as address,
       e.branch_ID as branchId,
-      p.pos_name as role,
+      p.pos_name as role,  -- ✅ แก้ไข
       p.pos_ID as roleId,
       p.pos_salary as salary,
       b.branch_name as branchName,
-      'employee' as userType
+      e.created_at
     FROM employee e
     LEFT JOIN employee_position p ON e.pos_ID = p.pos_ID
     LEFT JOIN branch b ON e.branch_ID = b.branch_ID
     WHERE e.emp_username = ?
   `;
+
 
   db.query(sql, [username], (err, results) => {
     if (err) {
@@ -164,7 +165,7 @@ export const getAllEmployees = (req, res) => {
       e.emp_address,
       e.branch_ID,
       e.pos_ID,
-      p.pos_name as Role_name,
+      p.pos_name as role_name,
       p.pos_salary as salary,
       b.branch_name,
       e.created_at

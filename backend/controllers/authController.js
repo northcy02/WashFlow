@@ -2,7 +2,7 @@
 import db from '../config/database.js';
 
 // ========================================
-// 1. REGISTER
+// 1. REGISTER (✅ เพิ่ม Welcome Bonus)
 // ========================================
 export const register = (req, res) => {
   console.log('');
@@ -11,7 +11,8 @@ export const register = (req, res) => {
 
   const { username, password, cust_fname, cust_lname, cust_tel, cust_address } = req.body;
 
-  if (!username || !password || !cust_fname || !cust_lname) {
+  // Validation
+  if (!username || !password || !cust_fname || !cust_lname || !cust_tel) {
     return res.status(400).json({
       success: false,
       message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน'
@@ -52,33 +53,89 @@ export const register = (req, res) => {
       });
     }
 
-    // Insert new customer
+    // ✅ Insert new customer with Welcome Bonus (ระบุ column ชัดเจน)
     const insertSql = `
       INSERT INTO customer 
-      (cust_username, cust_password, cust_fname, cust_lname, cust_tel, cust_address) 
-      VALUES (?, ?, ?, ?, ?, ?)
+      (
+        cust_username, 
+        cust_password, 
+        cust_fname, 
+        cust_lname, 
+        cust_tel, 
+        cust_address, 
+        membership_tier_ID, 
+        total_points, 
+        available_points
+      ) 
+      VALUES (?, ?, ?, ?, ?, ?, 1, 50, 50)
     `;
+
+    console.log('📝 Inserting customer with 50 welcome points...');
 
     db.query(
       insertSql,
-      [username, password, cust_fname, cust_lname, cust_tel || null, cust_address || null],
+      [username, password, cust_fname, cust_lname, cust_tel, cust_address || null],
       (err, result) => {
         if (err) {
           console.error('❌ Insert Error:', err);
+          console.error('   SQL State:', err.sqlState);
+          console.error('   Error Code:', err.code);
           return res.status(500).json({
             success: false,
-            message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก'
+            message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก',
+            error: err.message
           });
         }
 
-        console.log('✅ Registration successful!');
-        console.log('Customer ID:', result.insertId);
+        const customerId = result.insertId;
+
+        console.log('✅ Customer created!');
+        console.log('   Customer ID:', customerId);
+        console.log('   Username:', username);
+
+        // ✅ Verify ว่าได้ 50 points หรือไม่
+        db.query(
+          'SELECT total_points, available_points FROM customer WHERE cust_ID = ?',
+          [customerId],
+          (err, verification) => {
+            if (err) {
+              console.error('⚠️ Verification Error:', err);
+            } else if (verification.length > 0) {
+              console.log('✅ Verification:');
+              console.log('   Total Points:', verification[0].total_points);
+              console.log('   Available Points:', verification[0].available_points);
+              
+              if (verification[0].available_points !== 50) {
+                console.error('⚠️ WARNING: Points not set correctly!');
+              }
+            }
+          }
+        );
+
+        // ✅ Record Welcome Bonus Transaction
+        const bonusSql = `
+          INSERT INTO point_transaction 
+          (cust_ID, transaction_type, points, description) 
+          VALUES (?, 'bonus', 50, 'Welcome Bonus - Thank you for joining CYBERCAR! 🎉')
+        `;
+
+        db.query(bonusSql, [customerId], (err) => {
+          if (err) {
+            console.error('⚠️ Bonus Transaction Error:', err);
+          } else {
+            console.log('🎁 Welcome Bonus transaction recorded');
+          }
+        });
+
         console.log('======================================');
+        console.log('');
 
         res.status(201).json({
           success: true,
           message: 'สมัครสมาชิกสำเร็จ!',
-          customerId: result.insertId
+          customerId: customerId,
+          welcomeBonus: 50,
+          initialPoints: 50  // ✅ ส่งไปให้ Frontend รู้
         });
       }
     );
@@ -102,18 +159,31 @@ export const login = (req, res) => {
     });
   }
 
+  // ✅ JOIN กับ membership_tier เพื่อดึงข้อมูลสมาชิก
   const sql = `
     SELECT 
-      cust_ID as id,
-      cust_fname as firstName,
-      cust_lname as lastName,
-      cust_tel as phone,
-      cust_address as address,
-      cust_username as username,
-      cust_password as password,
-      created_at as memberSince
-    FROM customer 
-    WHERE cust_username = ?
+      c.cust_ID as id,
+      c.cust_fname as firstName,
+      c.cust_lname as lastName,
+      c.cust_tel as phone,
+      c.cust_address as address,
+      c.cust_username as username,
+      c.cust_password as password,
+      c.total_points,
+      c.available_points,
+      c.total_spent,
+      c.membership_tier_ID,
+      c.created_at as memberSince,
+      
+      t.tier_name,
+      t.tier_icon,
+      t.tier_color,
+      t.discount_percent,
+      t.points_multiplier
+      
+    FROM customer c
+    LEFT JOIN membership_tier t ON c.membership_tier_ID = t.tier_ID
+    WHERE c.cust_username = ?
   `;
 
   db.query(sql, [username], (err, results) => {
@@ -143,6 +213,7 @@ export const login = (req, res) => {
       });
     }
 
+    // ✅ สร้าง userData พร้อม Points และ Membership
     const userData = {
       id: user.id,
       username: user.username,
@@ -151,11 +222,27 @@ export const login = (req, res) => {
       fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
       phone: user.phone || '',
       address: user.address || '',
-      memberSince: user.memberSince || new Date().toISOString()
+      memberSince: user.memberSince || new Date().toISOString(),
+      
+      // ✅ Points Info
+      totalPoints: parseInt(user.total_points) || 0,
+      availablePoints: parseInt(user.available_points) || 0,
+      totalSpent: parseFloat(user.total_spent) || 0,
+      
+      // ✅ Membership Info
+      membershipTierId: user.membership_tier_ID || 1,
+      tierName: user.tier_name || 'Bronze',
+      tierIcon: user.tier_icon || '🥉',
+      tierColor: user.tier_color || '#cd7f32',
+      discountPercent: parseFloat(user.discount_percent) || 0,
+      pointsMultiplier: parseFloat(user.points_multiplier) || 1.0
     };
 
     console.log('✅ Login successful!');
     console.log('Customer ID:', user.id);
+    console.log('Total Points:', userData.totalPoints);
+    console.log('Available Points:', userData.availablePoints);
+    console.log('Tier:', userData.tierName);
     console.log('======================================');
 
     res.json({
@@ -193,6 +280,10 @@ export const unifiedLogin = (req, res) => {
       cust_address as address,
       cust_username as username,
       cust_password as password,
+      total_points,
+      available_points,
+      total_spent,
+      membership_tier_ID,
       created_at,
       'customer' as userType
     FROM customer 
@@ -228,12 +319,17 @@ export const unifiedLogin = (req, res) => {
         fullName: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.username,
         phone: customer.phone || '',
         address: customer.address || '',
-        memberSince: customer.created_at || new Date().toISOString()
+        memberSince: customer.created_at || new Date().toISOString(),
+        totalPoints: customer.total_points || 0,
+        availablePoints: customer.available_points || 0,
+        totalSpent: customer.total_spent || 0,
+        membershipTierId: customer.membership_tier_ID || 1
       };
 
       console.log('✅ Customer Login successful!');
       console.log('Customer ID:', customer.id);
       console.log('Full Name:', userData.fullName);
+      console.log('Available Points:', userData.availablePoints);
       console.log('======================================');
       
       return res.json({ 
@@ -275,7 +371,6 @@ export const unifiedLogin = (req, res) => {
         });
       }
 
-      // ❌ ไม่เจอทั้ง Customer และ Employee
       if (employeeResult.length === 0) {
         console.log('⚠️ User not found:', username);
         return res.status(401).json({ 
@@ -326,7 +421,7 @@ export const unifiedLogin = (req, res) => {
 };
 
 // ========================================
-// 4. GET PROFILE
+// 4. GET PROFILE (✅ รวม Points Info)
 // ========================================
 export const getProfile = (req, res) => {
   const { id } = req.params;
@@ -335,15 +430,27 @@ export const getProfile = (req, res) => {
 
   const sql = `
     SELECT 
-      cust_ID as id,
-      cust_fname as firstName,
-      cust_lname as lastName,
-      cust_username as username,
-      cust_tel as phone,
-      cust_address as address,
-      created_at as memberSince
-    FROM customer 
-    WHERE cust_ID = ?
+      c.cust_ID as id,
+      c.cust_fname as firstName,
+      c.cust_lname as lastName,
+      c.cust_username as username,
+      c.cust_tel as phone,
+      c.cust_address as address,
+      c.total_points as totalPoints,
+      c.available_points as availablePoints,
+      c.total_spent as totalSpent,
+      c.membership_tier_ID as membershipTierId,
+      c.created_at as memberSince,
+      
+      t.tier_name,
+      t.tier_icon,
+      t.tier_color,
+      t.discount_percent,
+      t.points_multiplier
+      
+    FROM customer c
+    LEFT JOIN membership_tier t ON c.membership_tier_ID = t.tier_ID
+    WHERE c.cust_ID = ?
   `;
 
   db.query(sql, [id], (err, results) => {
@@ -366,6 +473,8 @@ export const getProfile = (req, res) => {
     user.fullName = `${user.firstName} ${user.lastName}`;
 
     console.log('✅ Profile loaded:', user.username);
+    console.log('   Total Points:', user.totalPoints);
+    console.log('   Available Points:', user.availablePoints);
 
     res.json({
       success: true,
@@ -374,9 +483,7 @@ export const getProfile = (req, res) => {
   });
 };
 
-// ========================================
-// 5. UPDATE PROFILE
-// ========================================
+// เหลือ functions อื่นๆ เหมือนเดิม...
 export const updateProfile = (req, res) => {
   const { id } = req.params;
   const { cust_fname, cust_lname, cust_tel, cust_address } = req.body;
@@ -425,9 +532,6 @@ export const updateProfile = (req, res) => {
   });
 };
 
-// ========================================
-// 6. CHANGE PASSWORD
-// ========================================
 export const changePassword = (req, res) => {
   const { id } = req.params;
   const { oldPassword, newPassword } = req.body;
@@ -497,9 +601,6 @@ export const changePassword = (req, res) => {
   });
 };
 
-// ========================================
-// 7. DELETE ACCOUNT
-// ========================================
 export const deleteAccount = (req, res) => {
   const { id } = req.params;
   const { password } = req.body;

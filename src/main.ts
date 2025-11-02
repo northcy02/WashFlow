@@ -1,5 +1,6 @@
 // src/main.ts
 import { createApp } from 'vue'
+import './assets/styles/global.css'  // ✅ เพิ่มบรรทัดนี้
 import './style.css'
 import App from './App.vue'
 import router from './Router/index'

@@ -1,68 +1,77 @@
 // backend/controllers/bookingManagementController.js
 import db from '../config/database.js';
 
-// ✅ 1. ดูการจองทั้งหมด (สำหรับ Employee)
 export const getAllBookings = (req, res) => {
   try {
-    const { status, date, limit = 50 } = req.query;
+    const requestStatus = req.query.status || null;
+    const requestDate = req.query.date || null;
+    const requestLimit = req.query.limit ? Number(req.query.limit) : 50;
 
-const sql = `
-  SELECT 
-    b.booking_ID,
-    b.booking_date,
-    b.booking_time,
-    b.duration,
-    b.booking_status,
-    b.created_at,
-    c.cust_ID,
-    c.cust_fname,
-    c.cust_lname,
-    c.cust_tel,
-    p.payment_amount,
-    p.payment_method,
-    r.receipt_number,        -- ✅ เปลี่ยน
-    r.receipt_description,   -- ✅ เปลี่ยน
-    br.branch_name
-  FROM booking b
-  LEFT JOIN customer c ON b.cust_ID = c.cust_ID      -- ✅ แก้
-  LEFT JOIN payment p ON b.booking_ID = p.booking_ID
-  LEFT JOIN receipt r ON p.payment_ID = r.payment_ID -- ✅ เปลี่ยน
-  LEFT JOIN branch br ON b.branch_ID = br.branch_ID
-  WHERE 1=1
-`;
+    console.log('📋 GET ALL BOOKINGS');
+    console.log('Filters:', { requestStatus, requestDate, requestLimit });
 
-    const params = [];
+    let sqlQuery = `
+      SELECT 
+        b.booking_ID,
+        b.booking_date,
+        b.booking_time,
+        b.duration,
+        b.booking_status,
+        b.subtotal,
+        b.membership_discount,
+        b.points_used,
+        b.final_amount,
+        b.points_earned,
+        b.created_at,
+        c.cust_ID,
+        c.cust_fname,
+        c.cust_lname,
+        c.cust_tel,
+        p.payment_amount,
+        p.payment_method,
+        p.payment_status,
+        br.branch_name,
+        r.receipt_number,
+        r.receipt_description
+      FROM booking b
+      LEFT JOIN customer c ON b.cust_ID = c.cust_ID
+      LEFT JOIN payment p ON b.booking_ID = p.booking_ID
+      LEFT JOIN branch br ON b.branch_ID = br.branch_ID
+      LEFT JOIN receipt r ON p.payment_ID = r.payment_ID
+      WHERE 1=1
+    `;
 
-    // Filter by status
-    if (status) {
-      sql += ' AND b.booking_status = ?';
-      params.push(status);
+    const queryParams = [];
+
+    if (requestStatus) {
+      sqlQuery += ' AND b.booking_status = ?';
+      queryParams.push(requestStatus);
     }
 
-    // Filter by date
-    if (date) {
-      sql += ' AND DATE(b.booking_date) = ?';
-      params.push(date);
+    if (requestDate) {
+      sqlQuery += ' AND DATE(b.booking_date) = ?';
+      queryParams.push(requestDate);
     }
 
-    sql += ' ORDER BY b.booking_date DESC, b.created_at DESC';
-    sql += ' LIMIT ?';
-    params.push(parseInt(limit));
+    sqlQuery += ' ORDER BY b.booking_date DESC, b.created_at DESC LIMIT ?';
+    queryParams.push(requestLimit);
 
-    console.log('📋 Fetching bookings with filters:', { status, date, limit });
+    console.log('SQL Preview:', sqlQuery.substring(0, 100));
+    console.log('Parameters:', queryParams);
 
-    db.query(sql, params, (err, results) => {
-      if (err) {
-        console.error('❌ Database Error:', err);
+    db.query(sqlQuery, queryParams, (error, results) => {
+      if (error) {
+        console.error('Database Error:', error);
         return res.status(500).json({
           success: false,
-          message: 'เกิดข้อผิดพลาด'
+          message: 'Database error',
+          error: error.message
         });
       }
 
-      console.log('✅ Found bookings:', results.length);
+      console.log('Found bookings:', results.length);
 
-      res.json({
+      return res.json({
         success: true,
         bookings: results,
         total: results.length
@@ -70,80 +79,123 @@ const sql = `
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({
+    console.error('Server Error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาด'
+      message: 'Server error',
+      error: error.message
     });
   }
 };
 
-// ✅ 2. อัพเดทสถานะการจอง
-export const updateBookingStatus = (req, res) => {
+export const updateBookingStatus = async (req, res) => {
+  const promisePool = db.promise();
+  let connection;
+
   try {
-    const { id } = req.params;
-    const { status, employee_id } = req.body;
+    const bookingId = req.params.id;
+    const newStatus = req.body.status;
+    const employeeId = req.body.employee_id;
 
-    console.log('📝 Updating booking status:', { id, status, employee_id });
+    console.log('Update Status:', { bookingId, newStatus, employeeId });
 
-    // Validate status
     const validStatuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
+    if (!validStatuses.includes(newStatus)) {
       return res.status(400).json({
         success: false,
-        message: 'สถานะไม่ถูกต้อง'
+        message: 'Invalid status'
       });
     }
 
-    // อัพเดท booking status
-    const updateBookingSql = 'UPDATE booking SET booking_status = ?, updated_at = NOW() WHERE booking_ID = ?';
-    
-    db.query(updateBookingSql, [status, id], (err, result) => {
-      if (err) {
-        console.error('❌ Database Error:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'เกิดข้อผิดพลาด'
-        });
-      }
+    connection = await promisePool.getConnection();
+    await connection.beginTransaction();
 
-      if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'ไม่พบการจอง'
-        });
-      }
+    const [updateResult] = await connection.query(
+      'UPDATE booking SET booking_status = ?, updated_at = NOW() WHERE booking_ID = ?',
+      [newStatus, bookingId]
+    );
 
-      // อัพเดท service status ด้วย
-      const updateServiceSql = 'UPDATE service SET service_status = ? WHERE booking_ID = ?';
-      db.query(updateServiceSql, [status, id]);
-
-      // ถ้าเป็น completed ให้อัพเดท service_finishdate
-      if (status === 'completed') {
-        const finishDateSql = 'UPDATE service SET service_finishdate = NOW() WHERE booking_ID = ?';
-        db.query(finishDateSql, [id]);
-      }
-
-      console.log('✅ Booking status updated to:', status);
-
-      res.json({
-        success: true,
-        message: 'อัพเดทสถานะสำเร็จ',
-        booking_id: id,
-        new_status: status
+    if (updateResult.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
       });
+    }
+
+    if (newStatus === 'completed') {
+      const [bookings] = await connection.query(
+        'SELECT cust_ID, final_amount, points_earned FROM booking WHERE booking_ID = ?',
+        [bookingId]
+      );
+
+      if (bookings.length > 0 && bookings[0].points_earned > 0) {
+        const customerData = bookings[0];
+
+        await connection.query(
+          `UPDATE customer 
+           SET total_points = total_points + ?,
+               available_points = available_points + ?,
+               total_spent = total_spent + ?
+           WHERE cust_ID = ?`,
+          [customerData.points_earned, customerData.points_earned, customerData.final_amount, customerData.cust_ID]
+        );
+
+        await connection.query(
+          `INSERT INTO point_transaction 
+           (cust_ID, booking_ID, transaction_type, points, description, related_amount)
+           VALUES (?, ?, 'earn', ?, ?, ?)`,
+          [customerData.cust_ID, bookingId, customerData.points_earned, `Earned from booking #${bookingId}`, customerData.final_amount]
+        );
+
+        console.log(`Awarded ${customerData.points_earned} points`);
+      }
+    }
+
+    await connection.query(
+      'UPDATE service SET service_status = ? WHERE booking_ID = ?',
+      [newStatus, bookingId]
+    );
+
+    if (newStatus === 'completed') {
+      await connection.query(
+        'UPDATE service SET service_finishdate = NOW() WHERE booking_ID = ?',
+        [bookingId]
+      );
+      
+      await connection.query(
+        'UPDATE payment SET payment_status = ? WHERE booking_ID = ?',
+        ['completed', bookingId]
+      );
+    }
+
+    await connection.commit();
+    console.log('Status updated successfully');
+
+    return res.json({
+      success: true,
+      message: 'Status updated',
+      booking_id: bookingId,
+      new_status: newStatus
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({
+    if (connection) {
+      await connection.rollback();
+    }
+    console.error('Update Error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาด'
+      message: 'Update failed',
+      error: error.message
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
-// ✅ 3. สถิติการจอง
 export const getBookingStats = (req, res) => {
   try {
     const statsSql = `
@@ -158,109 +210,106 @@ export const getBookingStats = (req, res) => {
       FROM booking
     `;
 
-    db.query(statsSql, (err, results) => {
-      if (err) {
-        console.error('❌ Database Error:', err);
+    db.query(statsSql, (error, results) => {
+      if (error) {
+        console.error('Stats Error:', error);
         return res.status(500).json({
           success: false,
-          message: 'เกิดข้อผิดพลาด'
+          message: 'Stats error'
         });
       }
 
-      const stats = results[0];
-
-      console.log('📊 Booking Stats:', stats);
-
-      res.json({
+      const statsData = results[0];
+      return res.json({
         success: true,
         stats: {
-          total: parseInt(stats.total) || 0,
-          pending: parseInt(stats.pending) || 0,
-          confirmed: parseInt(stats.confirmed) || 0,
-          in_progress: parseInt(stats.in_progress) || 0,
-          completed: parseInt(stats.completed) || 0,
-          cancelled: parseInt(stats.cancelled) || 0,
-          today: parseInt(stats.today) || 0
+          total: Number(statsData.total) || 0,
+          pending: Number(statsData.pending) || 0,
+          confirmed: Number(statsData.confirmed) || 0,
+          in_progress: Number(statsData.in_progress) || 0,
+          completed: Number(statsData.completed) || 0,
+          cancelled: Number(statsData.cancelled) || 0,
+          today: Number(statsData.today) || 0
         }
       });
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({
+    console.error('Stats Error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาด'
+      message: 'Server error'
     });
   }
 };
 
-// ✅ 4. รายได้
 export const getRevenue = (req, res) => {
   try {
-    const { period = 'today' } = req.query; // today, week, month, year
+    const periodType = req.query.period || 'today';
 
-    let dateCondition = '';
+    let dateCondition = 'DATE(b.booking_date) = CURDATE()';
     
-    switch (period) {
-      case 'today':
-        dateCondition = 'DATE(b.booking_date) = CURDATE()';
-        break;
-      case 'week':
-        dateCondition = 'YEARWEEK(b.booking_date) = YEARWEEK(NOW())';
-        break;
-      case 'month':
-        dateCondition = 'YEAR(b.booking_date) = YEAR(NOW()) AND MONTH(b.booking_date) = MONTH(NOW())';
-        break;
-      case 'year':
-        dateCondition = 'YEAR(b.booking_date) = YEAR(NOW())';
-        break;
-      default:
-        dateCondition = '1=1'; // all time
+    if (periodType === 'week') {
+      dateCondition = 'YEARWEEK(b.booking_date) = YEARWEEK(NOW())';
+    } else if (periodType === 'month') {
+      dateCondition = 'YEAR(b.booking_date) = YEAR(NOW()) AND MONTH(b.booking_date) = MONTH(NOW())';
+    } else if (periodType === 'year') {
+      dateCondition = 'YEAR(b.booking_date) = YEAR(NOW())';
     }
 
     const revenueSql = `
       SELECT 
         COUNT(b.booking_ID) as total_bookings,
-        SUM(p.payment_amount) as total_revenue,
-        AVG(p.payment_amount) as avg_revenue,
-        SUM(CASE WHEN b.booking_status = 'completed' THEN p.payment_amount ELSE 0 END) as completed_revenue,
-        SUM(CASE WHEN b.booking_status = 'pending' THEN p.payment_amount ELSE 0 END) as pending_revenue
+        COALESCE(SUM(p.payment_amount), 0) as total_revenue,
+        COALESCE(AVG(p.payment_amount), 0) as avg_revenue,
+        COALESCE(SUM(CASE WHEN b.booking_status = 'completed' THEN p.payment_amount ELSE 0 END), 0) as completed_revenue,
+        COALESCE(SUM(CASE WHEN p.payment_method = 'cash' THEN p.payment_amount ELSE 0 END), 0) as cash,
+        COALESCE(SUM(CASE WHEN p.payment_method = 'card' THEN p.payment_amount ELSE 0 END), 0) as card,
+        COALESCE(SUM(CASE WHEN p.payment_method = 'qr' THEN p.payment_amount ELSE 0 END), 0) as qr
       FROM booking b
       LEFT JOIN payment p ON b.booking_ID = p.booking_ID
       WHERE ${dateCondition}
     `;
 
-    db.query(revenueSql, (err, results) => {
-      if (err) {
-        console.error('❌ Database Error:', err);
+    db.query(revenueSql, (error, results) => {
+      if (error) {
+        console.error('Revenue Error:', error);
         return res.status(500).json({
           success: false,
-          message: 'เกิดข้อผิดพลาด'
+          message: 'Revenue error'
         });
       }
 
-      const revenue = results[0];
-
-      console.log('💰 Revenue Stats:', revenue);
-
-      res.json({
+      const revenueData = results[0];
+      return res.json({
         success: true,
-        period: period,
+        period: periodType,
         revenue: {
-          total_bookings: parseInt(revenue.total_bookings) || 0,
-          total_revenue: parseFloat(revenue.total_revenue) || 0,
-          avg_revenue: parseFloat(revenue.avg_revenue) || 0,
-          completed_revenue: parseFloat(revenue.completed_revenue) || 0,
-          pending_revenue: parseFloat(revenue.pending_revenue) || 0
+          total_bookings: Number(revenueData.total_bookings) || 0,
+          total_revenue: Number(revenueData.total_revenue) || 0,
+          avg_revenue: Number(revenueData.avg_revenue) || 0,
+          completed_revenue: Number(revenueData.completed_revenue) || 0
+        },
+        breakdown: {
+          cash: Number(revenueData.cash) || 0,
+          card: Number(revenueData.card) || 0,
+          qr: Number(revenueData.qr) || 0
         }
       });
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({
+    console.error('Revenue Error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาด'
+      message: 'Server error'
     });
   }
+};
+
+export default {
+  getAllBookings,
+  updateBookingStatus,
+  getBookingStats,
+  getRevenue
 };

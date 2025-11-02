@@ -96,8 +96,8 @@
               <div class="employee-avatar">
                 {{ employee.emp_fname.charAt(0) }}{{ employee.emp_lname.charAt(0) }}
               </div>
-              <div class="role-badge" :class="getRoleClass(employee.Role_name)">
-                {{ employee.Role_name }}
+              <div class="role-badge" :class="getRoleClass(employee.role_name)">
+                {{ employee.role_name }}
               </div>
             </div>
 
@@ -219,7 +219,7 @@
                 <select v-model="formData.role_ID" required>
                   <option value="">เลือกตำแหน่ง</option>
                   <option v-for="role in roles" :key="role.Role_ID" :value="role.Role_ID">
-                    {{ role.Role_name }} (฿{{ role.salary?.toLocaleString() }})
+                    {{ role.role_name }} (฿{{ role.salary?.toLocaleString() }})
                   </option>
                 </select>
               </div>
@@ -283,9 +283,9 @@ const formData = ref({
 const employeeStats = computed(() => {
   return {
     total: employees.value.length,
-    managers: employees.value.filter(e => e.Role_name === 'Manager').length,
-    cashiers: employees.value.filter(e => e.Role_name === 'Cashier').length,
-    cleaners: employees.value.filter(e => e.Role_name === 'Cleaner').length
+    managers: employees.value.filter(e => e.role_name === 'Manager').length,
+    cashiers: employees.value.filter(e => e.role_name === 'Cashier').length,
+    cleaners: employees.value.filter(e => e.role_name === 'Cleaner').length
   };
 });
 
@@ -351,7 +351,7 @@ const filterEmployees = () => {
 
   // Role filter
   if (filterRole.value) {
-    result = result.filter(e => e.Role_name === filterRole.value);
+    result = result.filter(e => e.role_name === filterRole.value);
   }
 
   // Branch filter

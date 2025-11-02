@@ -1,0 +1,308 @@
+/* src/assets/styles/global.css */
+
+/* ========================================
+   GLOBAL RESET
+======================================== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ========================================
+   ROOT VARIABLES
+======================================== */
+:root {
+  /* Colors */
+  --color-primary: #dc2626;
+  --color-primary-dark: #991b1b;
+  --color-primary-light: #ef4444;
+  
+  --color-secondary: #fbbf24;
+  --color-secondary-dark: #f59e0b;
+  
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Background */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #1a1a1a;
+  
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --text-disabled: rgba(255, 255, 255, 0.3);
+  
+  /* Borders */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color-hover: rgba(220, 38, 38, 0.5);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 5px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --shadow-primary: 0 10px 40px rgba(220, 38, 38, 0.3);
+  
+  /* Transitions */
+  --transition: all 0.3s ease;
+  
+  /* Z-index */
+  --z-header: 1000;
+  --z-modal: 2000;
+  --z-tooltip: 3000;
+}
+
+/* ========================================
+   GLOBAL FONT FAMILY
+======================================== */
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 
+    'Kanit',           /* Primary Font */
+    'Sarabun',         /* Thai Fallback */
+    'Noto Sans Thai',  /* Thai Fallback 2 */
+    -apple-system,     /* macOS & iOS */
+    BlinkMacSystemFont,/* macOS */
+    'Segoe UI',        /* Windows */
+    Roboto,            /* Android */
+    'Helvetica Neue',  /* Older macOS */
+    Arial,             /* Universal */
+    sans-serif;        /* Generic */
+  
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ========================================
+   ENSURE KANIT FOR ALL ELEMENTS
+======================================== */
+#app,
+input,
+textarea,
+select,
+button,
+.btn,
+.card,
+.modal,
+.form-field,
+.nav-link {
+  font-family: 'Kanit', sans-serif !important;
+}
+
+/* ========================================
+   HEADINGS
+======================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Kanit', sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.1rem; }
+h6 { font-size: 1rem; }
+
+/* ========================================
+   LINKS
+======================================== */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  color: var(--color-primary-light);
+}
+
+/* ========================================
+   BUTTONS BASE
+======================================== */
+button {
+  font-family: 'Kanit', sans-serif;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: var(--transition);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ========================================
+   INPUTS BASE
+======================================== */
+input,
+textarea,
+select {
+  font-family: 'Kanit', sans-serif;
+  font-size: 1rem;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  transition: var(--transition);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-disabled);
+}
+
+/* ========================================
+   SCROLLBAR
+======================================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(220, 38, 38, 0.5);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* ========================================
+   UTILITY CLASSES
+======================================== */
+.text-primary { color: var(--color-primary); }
+.text-secondary { color: var(--color-secondary); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+.text-muted { color: var(--text-muted); }
+
+.fw-300 { font-weight: 300; }
+.fw-400 { font-weight: 400; }
+.fw-500 { font-weight: 500; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.fw-900 { font-weight: 900; }
+
+/* ========================================
+   ANIMATIONS
+======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* ========================================
+   RESPONSIVE TYPOGRAPHY
+======================================== */
+@media (max-width: 768px) {
+  html { font-size: 14px; }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 13px; }
+  
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.1rem; }
+}
+
+/* ========================================
+   ACCESSIBILITY
+======================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================
+   PRINT
+======================================== */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .no-print,
+  header,
+  footer,
+  nav,
+  .btn,
+  button {
+    display: none !important;
+  }
+}

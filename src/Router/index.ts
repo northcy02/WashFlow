@@ -12,6 +12,7 @@ import EmployeeDashboard from '../pages/employee/EmployeeDashboard.vue'
 import EmployeeManagement from '../pages/employee/EmployeeManagement.vue'
 import PaymentManagement from '../pages/employee/PaymentManagement.vue'
 import Membership from '@/pages/Membership.vue'
+import BranchSelection from '@/pages/BranchSelection.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -26,6 +27,11 @@ const routes = [
     name: 'Register', 
     component: Register,
     meta: { requiresGuest: true }
+  },
+    {
+    path: '/branch-selection',
+    name: 'BranchSelection',
+    component: BranchSelection
   },
   { 
     path: '/booking', 

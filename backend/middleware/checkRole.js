@@ -1,10 +1,11 @@
 // backend/middleware/checkRole.js
+
 export const checkRole = (allowedRoles) => {
   return (req, res, next) => {
     const { employee_id } = req.body;
 
     db.query(
-      `SELECT e.*, p.pos_name as role            -- เปลี่ยนจาก Role_name
+      `SELECT e.*, p.pos_name as role  -- ✅ แก้จาก Role_name
        FROM employee e 
        LEFT JOIN employee_position p ON e.pos_ID = p.pos_ID 
        WHERE e.emp_ID = ?`,
@@ -19,7 +20,7 @@ export const checkRole = (allowedRoles) => {
 
         const employee = results[0];
         
-        if (!allowedRoles.includes(employee.role)) {  // เปลี่ยนจาก Role_name
+        if (!allowedRoles.includes(employee.role)) {  // ✅ ใช้ role แทน Role_name
           return res.status(403).json({
             success: false,
             message: `ไม่มีสิทธิ์เข้าถึง (ต้องการ: ${allowedRoles.join(', ')})`
