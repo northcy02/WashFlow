@@ -478,7 +478,7 @@
         <div class="contact-content">
           <div class="contact-item">
             <span class="contact-icon">📞</span>
-            <span>02-XXX-XXXX</span>
+            <span>083-447-3277</span>
           </div>
           <div class="contact-divider"></div>
           <div class="contact-item">
@@ -499,7 +499,7 @@
       <div class="container">
         <div class="footer-content">
           <div class="footer-logo">
-            <span class="logo-icon">🚗</span>
+            <!-- <span class="logo-icon">🚗</span> -->
             <span class="logo-text">CYBERCAR</span>
           </div>
           <p class="copyright">&copy; 2024 CYBERCAR. All rights reserved.</p>

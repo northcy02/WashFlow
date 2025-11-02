@@ -9,7 +9,7 @@
       <div class="container">
         <div class="hero-content">
           <h1 class="hero-title">
-            <span class="icon">🚗</span>
+            <!-- <span class="icon">🚗</span> -->
             <span class="title-text">เลือกประเภทรถของคุณ</span>
           </h1>
           <p class="hero-subtitle">เลือกรถที่เหมาะสม รับบริการที่คุ้มค่า</p>
