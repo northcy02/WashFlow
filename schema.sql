@@ -649,3 +649,41 @@ WHERE branch_ID = 3;
 
 -- Verify
 SELECT branch_ID, branch_name, latitude, longitude, map_url FROM branch;
+
+-- สร้าง View สำหรับ Branch Overview
+
+CREATE OR REPLACE VIEW v_branch_overview AS
+SELECT 
+    br.branch_ID,
+    br.branch_name,
+    br.branch_address,
+    br.branch_tel,
+    br.is_active,
+    
+    -- Employees
+    COUNT(DISTINCT e.emp_ID) as total_employees,
+    SUM(CASE WHEN e.is_active = TRUE THEN 1 ELSE 0 END) as active_employees,
+    SUM(CASE WHEN p.pos_name = 'Manager' THEN 1 ELSE 0 END) as managers,
+    SUM(CASE WHEN p.pos_name = 'Cashier' THEN 1 ELSE 0 END) as cashiers,
+    SUM(CASE WHEN p.pos_name = 'Cleaner' THEN 1 ELSE 0 END) as cleaners,
+    
+    -- Bookings
+    COUNT(DISTINCT b.booking_ID) as total_bookings,
+    SUM(CASE WHEN b.booking_status = 'pending' THEN 1 ELSE 0 END) as pending,
+    SUM(CASE WHEN b.booking_status = 'confirmed' THEN 1 ELSE 0 END) as confirmed,
+    SUM(CASE WHEN b.booking_status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+    SUM(CASE WHEN b.booking_status = 'completed' THEN 1 ELSE 0 END) as completed,
+    SUM(CASE WHEN DATE(b.booking_date) = CURDATE() THEN 1 ELSE 0 END) as today,
+    
+    -- Revenue
+    COALESCE(SUM(CASE WHEN b.booking_status = 'completed' THEN b.final_amount ELSE 0 END), 0) as total_revenue,
+    COALESCE(SUM(CASE WHEN b.booking_status = 'completed' AND DATE(b.booking_date) = CURDATE() THEN b.final_amount ELSE 0 END), 0) as today_revenue
+    
+FROM branch br
+LEFT JOIN employee e ON br.branch_ID = e.branch_ID
+LEFT JOIN employee_position p ON e.pos_ID = p.pos_ID
+LEFT JOIN booking b ON br.branch_ID = b.branch_ID
+GROUP BY br.branch_ID, br.branch_name, br.branch_address, br.branch_tel, br.is_active;
+
+-- Test View
+SELECT * FROM v_branch_overview;
